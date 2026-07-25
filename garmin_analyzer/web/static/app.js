@@ -280,6 +280,15 @@ document.getElementById("mfa-btn").addEventListener("click", async () => {
   poll();
 });
 
+/* ------------------------------ PWA setup ------------------------------- */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      /* offline shell is a nice-to-have; ignore registration failures */
+    });
+  });
+}
+
 /* -------------------------------- init ---------------------------------- */
 loadStatus();
 loadToday();

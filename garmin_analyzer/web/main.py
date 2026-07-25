@@ -43,6 +43,24 @@ def index():
     return FileResponse(WEB_DIR / "templates" / "index.html")
 
 
+@app.get("/sw.js")
+def service_worker():
+    # Served from root so the worker's scope covers the whole app, not /static.
+    return FileResponse(
+        WEB_DIR / "static" / "sw.js",
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/", "Cache-Control": "no-cache"},
+    )
+
+
+@app.get("/manifest.webmanifest")
+def manifest():
+    return FileResponse(
+        WEB_DIR / "static" / "manifest.webmanifest",
+        media_type="application/manifest+json",
+    )
+
+
 @app.get("/api/status")
 def status():
     from ..garmin_client import has_saved_tokens

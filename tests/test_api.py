@@ -50,3 +50,36 @@ def test_index_served():
     res = client.get("/")
     assert res.status_code == 200
     assert "Garmin Metrics Analyzer" in res.text
+
+
+def test_pwa_manifest_served():
+    res = client.get("/manifest.webmanifest")
+    assert res.status_code == 200
+    assert "manifest" in res.headers["content-type"]
+    body = res.json()
+    assert body["display"] == "standalone"
+    assert body["start_url"] == "/"
+    assert any(i["sizes"] == "512x512" for i in body["icons"])
+
+
+def test_service_worker_root_scope():
+    res = client.get("/sw.js")
+    assert res.status_code == 200
+    assert "javascript" in res.headers["content-type"]
+    # Must be allowed to control the whole app, not just /static
+    assert res.headers.get("service-worker-allowed") == "/"
+
+
+def test_pwa_head_tags_present():
+    html = client.get("/").text
+    assert 'rel="manifest"' in html
+    assert 'apple-mobile-web-app-capable' in html
+    assert 'apple-touch-icon' in html
+
+
+def test_pwa_icons_served():
+    for path in ("/static/icon-192.png", "/static/icon-512.png",
+                 "/static/apple-touch-icon.png"):
+        res = client.get(path)
+        assert res.status_code == 200
+        assert res.headers["content-type"] == "image/png"
