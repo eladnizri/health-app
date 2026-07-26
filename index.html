@@ -312,6 +312,37 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 .tx-item { padding: 10px 2px; }
 .badge { padding: 2px 10px; }
 
+/* toggle switch (page is RTL: knob rests at the right, slides left when on) */
+.switch { flex: none; width: 48px; height: 28px; border-radius: 999px; background: var(--baseline);
+  position: relative; transition: background .2s; }
+.switch .knob { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px;
+  border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+.switch.on { background: var(--good); }
+.switch.on .knob { transform: translateX(-20px); }
+
+/* transaction search + filter */
+.tx-filter { margin-bottom: 8px; }
+.tx-search { width: 100%; margin-bottom: 8px; }
+.filter-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch; }
+.filter-chips::-webkit-scrollbar { display: none; }
+.chip { flex: 0 0 auto; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 999px; padding: 5px 13px; font-size: 12.5px; font-weight: 600;
+  color: var(--ink-2); box-shadow: var(--shadow-sm); transition: background .15s, color .15s; }
+.chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.filter-count { font-size: 12px; color: var(--muted); font-weight: 600; padding: 6px 2px 2px; }
+
+/* month-over-month comparison line */
+.compare-line { display: flex; align-items: center; gap: 8px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm);
+  padding: 9px 14px; margin: 8px 0; font-size: 13.5px; font-weight: 600; }
+.compare-line .em { flex: none; }
+
+/* night-spending marker */
+.night-badge { font-size: 12px; opacity: .8; }
+.tx-item.night .tx-emoji { position: relative; }
+.tx-item.night { background: linear-gradient(90deg, rgba(89,86,196,.06), transparent 60%); }
+
 /* quick amounts row */
 .quick-amounts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin: 6px 0;
   direction: ltr; }
@@ -375,6 +406,7 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
     <button id="m-next">›</button>
   </div>
   <div class="kpis" id="m-kpis"></div>
+  <div id="m-compare"></div>
   <div class="card" id="m-budget"></div>
   <div class="card" id="m-weekend-share"></div>
   <div class="card">
@@ -394,7 +426,18 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
     <div id="fixed-list"></div>
   </div>
   <div class="card">
-    <h3 style="font-size:15px">כל התנועות של החודש</h3>
+    <div class="row spread" style="margin-bottom:8px">
+      <h3 style="font-size:15px">כל התנועות של החודש</h3>
+    </div>
+    <div class="tx-filter" data-noswipe>
+      <input id="m-search" class="tx-search" placeholder="🔍 חיפוש לפי קטגוריה או הערה" autocomplete="off">
+      <div class="filter-chips" id="m-filter-chips">
+        <button class="chip on" data-filter="all">הכל</button>
+        <button class="chip" data-filter="expense">הוצאות</button>
+        <button class="chip" data-filter="income">הכנסות</button>
+        <button class="chip" data-filter="night">🌙 לילה</button>
+      </div>
+    </div>
     <div id="m-tx"></div>
   </div>
 </section>
@@ -438,6 +481,14 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
     <div id="cat-list"></div>
   </div>
   <div class="card">
+    <div class="set-row" style="border:none;padding-bottom:2px">
+      <label>תזכורות חכמות
+        <br><span class="mut">סיכום בסוף סופ"ש ותזכורת ערב לעדכן הוצאות</span></label>
+      <button class="switch" id="set-reminders" role="switch" aria-checked="false"><span class="knob"></span></button>
+    </div>
+    <p class="mut" id="reminders-note" style="margin:6px 0 0"></p>
+  </div>
+  <div class="card">
     <h3 style="font-size:15px">גיבוי ונתונים</h3>
     <p class="mut">הנתונים נשמרים רק על המכשיר הזה. מומלץ לייצא גיבוי מדי פעם.</p>
     <div class="btn-row">
@@ -473,7 +524,8 @@ const DAY_NAMES = ["ראשון","שני","שלישי","רביעי","חמישי",
 const CAT_COLORS = ["var(--c1)","var(--c2)","var(--c3)","var(--c4)","var(--c5)","var(--c6)"];
 
 const DEFAULTS = () => ({
-  settings: { weekendBudget: 350, monthlyBudget: 0, savingsGoal: 0, startDay: 4, startHour: 18, endDay: 6, endHour: 24 },
+  settings: { weekendBudget: 350, monthlyBudget: 0, savingsGoal: 0, reminders: false,
+              startDay: 4, startHour: 18, endDay: 6, endHour: 24 },
   categories: [
     { id: "eat",   name: "אוכל בחוץ",  emoji: "🍔" },
     { id: "market",name: "סופר",       emoji: "🛒" },
@@ -943,13 +995,16 @@ function renderWeekend() {
     </div>`).join("") : `<div class="empty">עדיין אין היסטוריה</div>`;
 }
 
+/* "night" spending: 22:00–05:59 — often impulsive/unplanned, worth flagging */
+const isNight = (ts) => { const h = new Date(ts).getHours(); return h >= 22 || h < 6; };
 function txItem(t) {
   const c = t.type === "income" ? { emoji: "💰", name: "הכנסה" } : catById(t.cat);
   const d = new Date(t.ts);
+  const night = t.type === "expense" && isNight(t.ts);
   const when = `${DAY_NAMES[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1} · ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  return `<div class="tx-item" data-tx="${t.id}">
+  return `<div class="tx-item${night ? " night" : ""}" data-tx="${t.id}">
     <span class="tx-emoji">${c.emoji}</span>
-    <span class="tx-main"><div class="tx-name">${c.name}${t.note ? ` · <span class="mut">${esc(t.note)}</span>` : ""}</div>
+    <span class="tx-main"><div class="tx-name">${c.name}${night ? ` <span class="night-badge" title="הוצאת לילה">🌙</span>` : ""}${t.note ? ` · <span class="mut">${esc(t.note)}</span>` : ""}</div>
     <div class="tx-time">${when}</div></span>
     <span class="tx-amt num ${t.type === "income" ? "in" : ""}">${t.type === "income" ? "+" : "-"}${fmt2(t.amount)}</span>
   </div>`;
@@ -958,6 +1013,7 @@ const esc = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">
 
 /* ============================= month screen ========================== */
 let mYear, mMonth;
+let txQuery = "", txFilter = "all";
 { const n = new Date(); mYear = n.getFullYear(); mMonth = n.getMonth(); }
 const MONTHS = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
 
@@ -978,6 +1034,13 @@ function monthTotals(y, m) {
 }
 $("#m-prev").addEventListener("click", () => { mMonth--; if (mMonth < 0) { mMonth = 11; mYear--; } renderMonth(); });
 $("#m-next").addEventListener("click", () => { mMonth++; if (mMonth > 11) { mMonth = 0; mYear++; } renderMonth(); });
+$("#m-search").addEventListener("input", (e) => { txQuery = e.target.value; renderMonthTx(); });
+$("#m-filter-chips").addEventListener("click", (e) => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  txFilter = b.dataset.filter;
+  document.querySelectorAll("#m-filter-chips .chip").forEach((x) => x.classList.toggle("on", x === b));
+  renderMonthTx();
+});
 
 function renderMonth() {
   $("#m-label").textContent = `${MONTHS[mMonth]} ${mYear}`;
@@ -998,6 +1061,26 @@ function renderMonth() {
     <div class="kpi"><div class="l">הכנסות</div><div class="v num">${fmt(m.inc)}</div></div>
     <div class="kpi"><div class="l">הוצאות</div><div class="v num">${fmt(m.out)}</div></div>
     ${savingsKpi}`;
+
+  // comparison to the previous month (reported expenses)
+  let py = mYear, pm = mMonth - 1; if (pm < 0) { pm = 11; py--; }
+  const prev = monthTotals(py, pm);
+  const cmp = $("#m-compare");
+  if (prev.reportedOut > 0 && m.reportedOut > 0) {
+    const d = Math.round((m.reportedOut / prev.reportedOut - 1) * 100);
+    const up = d > 0;
+    const near = Math.abs(d) < 3;
+    const em = near ? "➖" : up ? "🔺" : "🔻";
+    const col = near ? "var(--muted)" : up ? "var(--crit)" : "var(--good-text)";
+    const txt = near ? `דומה לחודש הקודם (${MONTHS[pm]})`
+      : `${up ? "יותר" : "פחות"} ב-${Math.abs(d)}% מ${MONTHS[pm]} (${fmt(prev.reportedOut)})`;
+    cmp.innerHTML = `<div class="compare-line"><span class="em">${em}</span>
+      <span>הוצאות מדווחות ${txt}</span>
+      <span class="num" style="color:${col};font-weight:800;margin-inline-start:auto">${up ? "+" : ""}${d}%</span></div>`;
+    cmp.style.display = "";
+  } else {
+    cmp.style.display = "none";
+  }
 
   // monthly budget (reported expenses) + projection for the current month
   const mb = S.settings.monthlyBudget;
@@ -1060,9 +1143,31 @@ function renderMonth() {
       <span class="tx-amt num ${f.type === "income" ? "in" : ""}">${f.type === "income" ? "+" : "-"}${fmt2(f.amount)}</span>
     </div>`).join("") : `<div class="empty">אין קבועות עדיין - הוסף משכורת, שכ"ד, מנויים</div>`;
 
-  // month tx list
-  const list = [...m.txs].sort((a, b) => b.ts.localeCompare(a.ts));
-  $("#m-tx").innerHTML = list.length ? list.map(txItem).join("") : `<div class="empty">אין תנועות החודש</div>`;
+  // month tx list (with search + filter)
+  renderMonthTx();
+}
+
+function renderMonthTx() {
+  const m = monthTotals(mYear, mMonth);
+  const q = txQuery.trim().toLowerCase();
+  let list = [...m.txs].sort((a, b) => b.ts.localeCompare(a.ts));
+  // type/night filter
+  if (txFilter === "expense") list = list.filter((t) => t.type === "expense");
+  else if (txFilter === "income") list = list.filter((t) => t.type === "income");
+  else if (txFilter === "night") list = list.filter((t) => t.type === "expense" && isNight(t.ts));
+  // text query: category name or note
+  if (q) list = list.filter((t) => {
+    const cn = t.type === "income" ? "הכנסה" : catById(t.cat).name;
+    return cn.toLowerCase().includes(q) || (t.note || "").toLowerCase().includes(q);
+  });
+  const el = $("#m-tx");
+  if (!m.txs.length) { el.innerHTML = `<div class="empty">אין תנועות החודש</div>`; return; }
+  if (!list.length) { el.innerHTML = `<div class="empty">לא נמצאו תנועות תואמות</div>`; return; }
+  const filtered = q || txFilter !== "all";
+  const head = filtered
+    ? `<div class="filter-count">${list.length} תנועות · סה"כ ${fmt(sum(list.map((t) => ({ amount: t.type === "income" ? 0 : t.amount }))))}</div>`
+    : "";
+  el.innerHTML = head + list.map(txItem).join("");
 }
 
 /* ======================== edit modals (tx/fixed/cat) ================= */
@@ -1150,6 +1255,22 @@ function renderSettings() {
       <span class="tx-main"><div class="tx-name">${esc(c.name)}</div></span>
       <button class="btn danger" data-delcat="${c.id}">הסרה</button>
     </div>`).join("");
+  // reminders switch state + note
+  const sw = $("#set-reminders");
+  const on = !!S.settings.reminders;
+  sw.classList.toggle("on", on);
+  sw.setAttribute("aria-checked", on ? "true" : "false");
+  const note = $("#reminders-note");
+  if (!on) { note.textContent = ""; }
+  else if (!("Notification" in window)) {
+    note.textContent = "התזכורות יופיעו כשתפתח את האפליקציה (הדפדפן לא תומך בהתראות מערכת).";
+  } else if (Notification.permission === "granted") {
+    note.textContent = "✓ התראות מופעלות — יופיעו בפתיחת האפליקציה כשיש מה להזכיר.";
+  } else if (Notification.permission === "denied") {
+    note.textContent = "התראות המערכת חסומות בדפדפן; התזכורות יופיעו בתוך האפליקציה בלבד.";
+  } else {
+    note.textContent = "התזכורות יופיעו בפתיחת האפליקציה.";
+  }
 }
 ["set-budget", "set-monthly", "set-savings-goal", "set-start-day", "set-start-hour", "set-end-day", "set-end-hour"].forEach((id) => {
   document.getElementById(id).addEventListener("change", () => {
@@ -1168,6 +1289,15 @@ $("#cat-list").addEventListener("click", (e) => {
   if (S.categories.length <= 1) return;
   S.categories = S.categories.filter((c) => c.id !== b.dataset.delcat);
   save(); render();
+});
+$("#set-reminders").addEventListener("click", () => {
+  S.settings.reminders = !S.settings.reminders;
+  save();
+  if (S.settings.reminders && "Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission().then(() => renderSettings());
+  }
+  renderSettings();
+  if (S.settings.reminders) showToast("תזכורות הופעלו ✓", false);
 });
 $("#cat-add").addEventListener("click", () => {
   modal(`
@@ -1243,6 +1373,51 @@ $("#wipe").addEventListener("click", () => {
   $("#w-no").onclick = closeModal;
 });
 
+/* ======================= smart reminders ======================= */
+/* True scheduled background push isn't reliable in an installed web app
+   (especially on iOS), so reminders fire when the app is opened/foregrounded:
+   a native Notification when permission is granted, otherwise an in-app toast. */
+const REM_KEY = "kesef-reminders";
+const remState = () => { try { return JSON.parse(localStorage.getItem(REM_KEY)) || {}; } catch { return {}; } };
+const setRemState = (o) => localStorage.setItem(REM_KEY, JSON.stringify(o));
+function notify(title, body) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    try { new Notification(title, { body, icon: "icon-192.png", lang: "he", dir: "rtl" }); return; }
+    catch {}
+  }
+  showToast(body, false);
+}
+function checkReminders() {
+  if (!S.settings.reminders) return;
+  const now = new Date();
+  const st = remState();
+  const today = now.toISOString().slice(0, 10);
+
+  // 1) end-of-weekend summary (once per weekend)
+  const cur = weekendWindow(now);
+  if (now >= cur.end && st.lastWeekendSummary !== cur.id) {
+    const txs = weekendTx(cur);
+    if (txs.length) {
+      const total = sum(txs), b = S.settings.weekendBudget;
+      notify('סיכום סופ"ש 🌅', total <= b
+        ? `סיימת ב-${fmt(total)} — בתקציב ✓ (נשארו ${fmt(b - total)})`
+        : `סיימת ב-${fmt(total)} — חריגה של ${fmt(total - b)}`);
+    }
+    st.lastWeekendSummary = cur.id;
+    setRemState(st);
+  }
+
+  // 2) evening nudge — after 20:00, nothing logged today (once per day)
+  if (now.getHours() >= 20 && st.lastEvening !== today) {
+    const loggedToday = S.tx.some((t) => t.ts.slice(0, 10) === today);
+    if (!loggedToday) {
+      notify("תזכורת ערב 🌙", "עוד לא רשמת היום הוצאות — רוצה לעדכן?");
+      st.lastEvening = today;
+      setRemState(st);
+    }
+  }
+}
+
 /* ============================== render all =========================== */
 function render() {
   renderCats(); renderAmount(); syncBucketButtons(); updateBudgetStrip(); updateRepeatButton();
@@ -1251,6 +1426,10 @@ function render() {
 syncBucketButtons();
 updateRepeatButton();
 render();
+
+// fire reminders on open and whenever the app returns to the foreground
+setTimeout(checkReminders, 1200);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkReminders(); });
 
 /* offline support (works when served over http; silently skipped otherwise) */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
