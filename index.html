@@ -312,6 +312,13 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 .tx-item { padding: 10px 2px; }
 .badge { padding: 2px 10px; }
 
+/* travel mode figures */
+.travel-figures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center;
+  margin-top: 4px; }
+.travel-figures .tf-v { font-size: 18px; font-weight: 800; line-height: 1.1; }
+.travel-figures .tf-l { font-size: 11px; color: var(--muted); margin-top: 2px; font-weight: 600; }
+.bucket-seg button[data-bucket="travel"].on { background: #7c6df2; }
+
 /* toggle switch (page is RTL: knob rests at the right, slides left when on) */
 .switch { flex: none; width: 48px; height: 28px; border-radius: 999px; background: var(--baseline);
   position: relative; transition: background .2s; }
@@ -351,6 +358,128 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
   transition: transform .06s, background .12s; }
 .qa-btn:active { transform: scale(.97); }
 .qa-btn#repeat-last { color: var(--ink-2); font-size: 16px; }
+
+/* ============================================================================
+   PREMIUM PASS — depth, type & accent refinements layered on the base design.
+   Kept footprint-neutral on the report screen so the keypad still clears the
+   tab bar on short phones.
+   ============================================================================ */
+:root {
+  --grad-accent: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 68%, #16235a));
+  --shadow: 0 1px 1px rgba(16,24,40,.03), 0 2px 6px rgba(16,24,40,.05), 0 12px 28px -10px rgba(16,24,40,.10);
+  --shadow-sm: 0 1px 2px rgba(16,24,40,.06);
+  --ring-glow: rgba(16,24,40,.10);
+}
+@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) {
+  --shadow: 0 1px 1px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.45), 0 16px 32px -12px rgba(0,0,0,.6);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.5); --ring-glow: rgba(0,0,0,.5); } }
+:root[data-theme="dark"] {
+  --shadow: 0 1px 1px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.45), 0 16px 32px -12px rgba(0,0,0,.6);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.5); --ring-glow: rgba(0,0,0,.5); }
+
+/* soft depth behind the page */
+body { background:
+  radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 60%),
+  var(--page); background-attachment: fixed; }
+
+/* headings & numerals */
+h1, h2, h3 { letter-spacing: -.2px; }
+h2 { font-weight: 800; }
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+/* cards: hairline top highlight for a crisp, layered feel */
+.card { position: relative; border-color: color-mix(in srgb, var(--border) 70%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 97%, #fff), var(--surface)); }
+@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .card {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, #fff 3%), var(--surface)); } }
+.card > h3:first-child::before { background: var(--grad-accent); opacity: 1; width: 3.5px; height: 15px;
+  box-shadow: 0 0 8px -1px color-mix(in srgb, var(--accent) 60%, transparent); }
+
+/* KPI tiles: premium readout */
+.kpi { background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, var(--accent) 4%), var(--surface));
+  border-color: color-mix(in srgb, var(--border) 80%, transparent); }
+.kpi .l { color: var(--muted); text-transform: uppercase; font-size: 9.5px; letter-spacing: .6px; }
+.kpi .v { font-weight: 800; letter-spacing: -.4px; }
+
+/* primary actions → accent gradient with depth */
+.btn.primary, .save-income {
+  background: var(--grad-accent); border: none; color: #fff;
+  box-shadow: 0 1px 2px rgba(16,24,40,.18), 0 6px 16px -6px color-mix(in srgb, var(--accent) 55%, transparent);
+  transition: transform .08s ease, box-shadow .15s ease, filter .15s ease; }
+.btn.primary:active, .save-income:active { transform: translateY(1px); filter: brightness(.96); }
+
+/* selected segment / type toggle → gradient chip */
+.type-toggle button.on, .seg button.on, .bucket-seg button.on, .chip.on {
+  background: var(--grad-accent); border-color: transparent;
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--accent) 50%, transparent); }
+
+/* progress meters & bars → refined track + gradient vbars */
+.meter, .bs-bar { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.vbar { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 92%, #fff 8%), var(--accent)); }
+.vbar.over { background: linear-gradient(180deg, color-mix(in srgb, var(--crit) 92%, #fff 8%), var(--crit)); }
+
+/* budget ring: soft glow + rounded, premium cap */
+.ring-wrap { filter: drop-shadow(0 3px 8px var(--ring-glow)); }
+.ring-wrap svg circle:last-child { transition: stroke-dashoffset .6s cubic-bezier(.22,.61,.36,1); }
+.ring-val .amt { letter-spacing: -.5px; }
+
+/* amount readout: crisp, focused */
+.amount-display { background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, var(--accent) 5%), var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
+.amount-display .cur { font-weight: 700; }
+
+/* keypad & category keys: tactile */
+.keypad button, .cat-btn, .qa-btn { border-color: color-mix(in srgb, var(--border) 75%, transparent); }
+.keypad button:active, .qa-btn:active, .cat-btn:active { box-shadow: var(--shadow-sm) inset; }
+
+/* tab bar: frosted, premium indicator */
+.tabbar { background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: saturate(1.5) blur(14px); -webkit-backdrop-filter: saturate(1.5) blur(14px);
+  box-shadow: 0 -1px 0 var(--border), 0 -10px 30px -12px rgba(16,24,40,.12); }
+.tabbar button.on::before { background: var(--grad-accent); width: 24px; height: 3px;
+  box-shadow: 0 1px 6px -1px color-mix(in srgb, var(--accent) 70%, transparent); }
+
+/* badges & chips: softer surfaces */
+.badge { border-color: color-mix(in srgb, var(--border) 80%, transparent);
+  background: color-mix(in srgb, var(--surface) 60%, transparent); }
+.badge.ok { background: color-mix(in srgb, var(--good) 12%, transparent); border-color: color-mix(in srgb, var(--good) 30%, transparent); }
+.badge.over { background: color-mix(in srgb, var(--crit) 12%, transparent); border-color: color-mix(in srgb, var(--crit) 30%, transparent); }
+
+/* transaction rows: hairline separators, gentle hover/press */
+.tx-item { border-top-color: color-mix(in srgb, var(--grid) 70%, transparent); transition: background .12s; }
+.tx-item[data-tx]:active, .tx-item[data-fixed]:active { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.tx-amt { letter-spacing: -.3px; }
+
+/* modals: refined sheet */
+.modal { box-shadow: 0 -8px 40px -8px rgba(16,24,40,.3); border-radius: 24px 24px 0 0; }
+.modal-back { backdrop-filter: blur(2px); }
+
+/* toast: crisp pill */
+.toast { border-radius: 16px; box-shadow: 0 8px 30px -6px rgba(16,24,40,.4); }
+
+/* respect reduced motion for the new transitions too */
+@media (prefers-reduced-motion: reduce) {
+  .ring-wrap svg circle:last-child, .btn.primary, .save-income { transition: none; }
+}
+
+/* ---------- compact report layout for short phones (e.g. iPhone SE) ----------
+   Keeps the whole entry flow — amount, quick amounts, categories, keypad —
+   above the tab bar without scrolling on shorter viewports. */
+@media (max-height: 730px) {
+  #s-report.active { padding-top: calc(4px + env(safe-area-inset-top)); }
+  #s-report .budget-strip { padding: 5px 12px; margin: 0 0 4px; }
+  #s-report .seg { margin-bottom: 3px; }
+  #s-report .seg button, #s-report .bucket-seg button { padding: 4px 14px; }
+  #s-report .amount-display { padding: 2px 0; font-size: 30px; }
+  #s-report .amount-display .cur { font-size: 19px; }
+  #s-report .quick-amounts { margin: 4px 0; }
+  #s-report .qa-btn { padding: 6px 0; font-size: 13px; }
+  #s-report .note-inline { padding: 5px 12px; margin-bottom: 2px; }
+  #s-report .cats-strip .cat-btn { padding: 6px 4px; font-size: 11px; }
+  #s-report .cats-strip .cat-btn .em { font-size: 17px; }
+  #s-report #keypad { grid-template-rows: repeat(4, minmax(36px, 1fr)); gap: 5px; margin-top: 5px; }
+  #s-report .keypad button { font-size: 19px; padding: 3px 0; }
+}
 </style>
 </head>
 <body>
@@ -363,9 +492,10 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
     <button data-type="income">הכנסה</button>
   </div>
   <div class="seg bucket-seg" id="bucket-toggle">
-    <button data-bucket="base">בסיס (חול)</button>
+    <button data-bucket="base">כללי</button>
     <button data-bucket="weekend">סופ"ש</button>
     <button data-bucket="other">אחר</button>
+    <button data-bucket="travel" id="bucket-travel" style="display:none">✈️ טיול</button>
   </div>
   <div class="amount-display zero" id="amount-display"><span class="cur">₪</span>0</div>
   <div class="quick-amounts" id="quick-amounts">
@@ -407,6 +537,7 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
   </div>
   <div class="kpis" id="m-kpis"></div>
   <div id="m-compare"></div>
+  <div class="card" id="m-travel"></div>
   <div class="card" id="m-budget"></div>
   <div class="card" id="m-weekend-share"></div>
   <div class="card">
@@ -534,8 +665,9 @@ const DEFAULTS = () => ({
     { id: "shop",  name: "קניות",      emoji: "🛍️" },
     { id: "other", name: "אחר",        emoji: "📦" },
   ],
-  tx: [],     // {id, type:'expense'|'income', amount, cat, note, ts, bucket:'weekend'|'base'|'other'}
+  tx: [],     // {id, type:'expense'|'income', amount, cat, note, ts, bucket:'weekend'|'base'|'other'|'travel', tripId?}
   fixed: [],  // {id, type:'expense'|'income', name, amount}
+  trips: [],  // {id, name, budget, start, end}  (end === null while active)
 });
 
 let S = load();
@@ -624,6 +756,12 @@ const catColor = (id) => {
 const weekendTx = (w) =>
   S.tx.filter((t) => t.type === "expense" && t.bucket === "weekend" && weekendOf(t.ts).id === w.id);
 const sum = (list) => list.reduce((a, t) => a + t.amount, 0);
+
+/* ------- travel mode: one active trip at a time, plus history ------- */
+const activeTrip = () => (S.trips || []).find((t) => !t.end) || null;
+const tripById = (id) => (S.trips || []).find((t) => t.id === id) || null;
+const tripTx = (id) => S.tx.filter((t) => t.type === "expense" && t.tripId === id);
+const tripSpent = (id) => sum(tripTx(id));
 
 /* completed weekends (before current), newest first */
 function pastWeekends(maxN = 26) {
@@ -764,6 +902,10 @@ $("#bucket-toggle").addEventListener("click", (e) => {
   updateBudgetStrip();
 });
 function syncBucketButtons() {
+  // the travel bucket only exists while a trip is active
+  const trip = activeTrip();
+  $("#bucket-travel").style.display = trip ? "" : "none";
+  if (!trip && txBucket === "travel") txBucket = inWeekend(new Date()) ? "weekend" : "base";
   document.querySelectorAll("#bucket-toggle button")
     .forEach((x) => x.classList.toggle("on", x.dataset.bucket === txBucket));
 }
@@ -798,7 +940,18 @@ function updateBudgetStrip() {
         <span class="bs-bar"><div style="width:${Math.min(100, mb ? m.reportedOut / mb * 100 : 0)}%;background:${color}"></div></span>
         <span class="bs-amt" style="color:${color}">${left >= 0 ? "נשארו " + fmt(left) : "חריגה " + fmt(-left)}</span>`;
     } else {
-      el.innerHTML = `<span>📅 יום חול — נכנס להוצאות החודש</span><span class="bs-amt">${fmt(m.reportedOut)} החודש</span>`;
+      el.innerHTML = `<span>📅 כללי — נכנס להוצאות החודש</span><span class="bs-amt">${fmt(m.reportedOut)} החודש</span>`;
+    }
+  } else if (txBucket === "travel") {
+    const trip = activeTrip();
+    if (trip) {
+      const spent = tripSpent(trip.id), left = trip.budget - spent;
+      const color = left < 0 ? "var(--crit)" : (trip.budget ? Math.max(0, left) / trip.budget : 0) < 0.2 ? "var(--warn)" : "var(--good)";
+      el.innerHTML = `<span>✈️ ${esc(trip.name)}</span>
+        <span class="bs-bar"><div style="width:${Math.min(100, trip.budget ? spent / trip.budget * 100 : 0)}%;background:${color}"></div></span>
+        <span class="bs-amt" style="color:${color}">${left >= 0 ? "נשארו " + fmt(left) : "חריגה " + fmt(-left)}</span>`;
+    } else {
+      el.innerHTML = `<span>✈️ טיול — נכנס לתקציב הטיול</span>`;
     }
   } else {
     el.innerHTML = `<span>🏷️ "אחר" — נכנס להוצאות החודש (בנפרד מהסופ"ש)</span>`;
@@ -822,12 +975,18 @@ function addTx(type, cat) {
   if (!amount || amount <= 0) { showToast("קודם מקלידים סכום 🙂", false); return; }
   const t = { id: uid(), type, amount, cat, note: $("#note-input").value.trim() || null,
               ts: new Date().toISOString(), bucket: type === "expense" ? txBucket : null };
+  const trip = activeTrip();
+  if (type === "expense" && txBucket === "travel" && trip) t.tripId = trip.id;
   S.tx.push(t); save();
   lastAddedId = t.id;
   amountStr = ""; $("#note-input").value = ""; renderAmount();
   let msg;
   if (type === "income") msg = `נשמרה הכנסה של ${fmt2(amount)} ✓`;
-  else if (t.bucket === "weekend") {
+  else if (t.bucket === "travel" && trip) {
+    const left = trip.budget - tripSpent(trip.id);
+    msg = left >= 0 ? `נשמר ✓ נשארו ${fmt(left)} לטיול`
+                    : `נשמר ✓ חריגה של ${fmt(-left)} מתקציב הטיול`;
+  } else if (t.bucket === "weekend") {
     const left = S.settings.weekendBudget - sum(weekendTx(weekendOf(t.ts)));
     msg = left >= 0 ? `נשמר ✓ נשארו ${fmt(left)} לסופ"ש`
                     : `נשמר ✓ חריגה של ${fmt(-left)} מתקציב הסופ"ש`;
@@ -1025,11 +1184,15 @@ function monthTotals(y, m) {
   const fixedIn = S.fixed.filter((f) => f.type === "income").reduce((a, f) => a + f.amount, 0);
   const fixedOut = S.fixed.filter((f) => f.type === "expense").reduce((a, f) => a + f.amount, 0);
   const exp = txs.filter((t) => t.type === "expense");
-  const reportedOut = sum(exp);                    // variable/reported expenses only
+  // travel is a separate pot: it counts toward the balance but not the monthly reported budget
+  const travelExp = exp.filter((t) => t.bucket === "travel");
+  const reportedExp = exp.filter((t) => t.bucket !== "travel");
+  const travelOut = sum(travelExp);
+  const reportedOut = sum(reportedExp);            // variable/reported expenses (excl. travel)
   const inc = fixedIn + sum(txs.filter((t) => t.type === "income"));
-  const out = fixedOut + reportedOut;
+  const out = fixedOut + reportedOut + travelOut;
   const byBucket = (b) => sum(exp.filter((t) => t.bucket === b));
-  return { inc, out, net: inc - out, txs, fixedIn, fixedOut, reportedOut,
+  return { inc, out, net: inc - out, txs, exp, reportedExp, fixedIn, fixedOut, reportedOut, travelOut,
            weekendOut: byBucket("weekend"), baseOut: byBucket("base"), otherOut: byBucket("other") };
 }
 $("#m-prev").addEventListener("click", () => { mMonth--; if (mMonth < 0) { mMonth = 11; mYear--; } renderMonth(); });
@@ -1104,11 +1267,12 @@ function renderMonth() {
     $("#m-budget").style.display = "none";
   }
 
-  // where the reported money went: weekend / base / other split
+  // where the reported money went: weekend / general / other / travel split
   $("#m-weekend-share").innerHTML = `
     <div class="row spread"><span class="sub">🌅 סופ"שים</span><span class="num" style="font-weight:700">${fmt(m.weekendOut)}${m.reportedOut ? ` <span class="mut">(${Math.round(m.weekendOut / m.reportedOut * 100)}%)</span>` : ""}</span></div>
-    <div class="row spread" style="margin-top:5px"><span class="sub">📅 בסיס (חול)</span><span class="num" style="font-weight:700">${fmt(m.baseOut)}</span></div>
-    ${m.otherOut ? `<div class="row spread" style="margin-top:5px"><span class="sub">🏷️ אחר</span><span class="num" style="font-weight:700">${fmt(m.otherOut)}</span></div>` : ""}`;
+    <div class="row spread" style="margin-top:5px"><span class="sub">📅 כללי</span><span class="num" style="font-weight:700">${fmt(m.baseOut)}</span></div>
+    ${m.otherOut ? `<div class="row spread" style="margin-top:5px"><span class="sub">🏷️ אחר</span><span class="num" style="font-weight:700">${fmt(m.otherOut)}</span></div>` : ""}
+    ${m.travelOut ? `<div class="row spread" style="margin-top:5px"><span class="sub">✈️ טיולים</span><span class="num" style="font-weight:700">${fmt(m.travelOut)}</span></div>` : ""}`;
 
   // monthly trend: reported expenses per month, last 6 months ending at viewed month
   const trend = [];
@@ -1119,9 +1283,9 @@ function renderMonth() {
   }
   $("#m-chart").innerHTML = vbars(trend, mb > 0 ? mb : 0);
 
-  // categories
+  // categories (excludes travel — trips get their own budget breakdown)
   const catSums = {};
-  m.txs.filter((t) => t.type === "expense").forEach((t) => {
+  m.reportedExp.forEach((t) => {
     catSums[t.cat || "other"] = (catSums[t.cat || "other"] || 0) + t.amount;
   });
   const entries = Object.entries(catSums).sort((a, b) => b[1] - a[1]);
@@ -1143,9 +1307,106 @@ function renderMonth() {
       <span class="tx-amt num ${f.type === "income" ? "in" : ""}">${f.type === "income" ? "+" : "-"}${fmt2(f.amount)}</span>
     </div>`).join("") : `<div class="empty">אין קבועות עדיין - הוסף משכורת, שכ"ד, מנויים</div>`;
 
+  // travel mode
+  renderTravel();
+
   // month tx list (with search + filter)
   renderMonthTx();
 }
+
+/* ---------- travel mode card ---------- */
+function renderTravel() {
+  const el = $("#m-travel");
+  const trip = activeTrip();
+  const past = (S.trips || []).filter((t) => t.end).sort((a, b) => (b.end || "").localeCompare(a.end || ""));
+  if (trip) {
+    const spent = tripSpent(trip.id), left = trip.budget - spent, n = tripTx(trip.id).length;
+    const frac = trip.budget > 0 ? Math.max(0, left) / trip.budget : 0;
+    const color = left < 0 ? "var(--crit)" : frac < 0.2 ? "var(--warn)" : "var(--good)";
+    const started = new Date(trip.start);
+    el.innerHTML = `
+      <div class="row spread" style="margin-bottom:6px">
+        <span class="sub" style="font-weight:800">✈️ ${esc(trip.name)}</span>
+        <span class="badge ok" style="border-color:var(--good)">מצב טיול פעיל</span>
+      </div>
+      <div class="travel-figures">
+        <div><div class="tf-v num" style="color:${color}">${fmt(Math.abs(left))}</div><div class="tf-l">${left >= 0 ? "נשארו" : "חריגה"}</div></div>
+        <div><div class="tf-v num">${fmt(spent)}</div><div class="tf-l">הוצאת</div></div>
+        <div><div class="tf-v num">${fmt(trip.budget)}</div><div class="tf-l">תקציב</div></div>
+      </div>
+      <div class="meter" style="margin:10px 0 4px"><div style="width:${Math.min(100, trip.budget ? spent / trip.budget * 100 : 0)}%;background:${color}"></div></div>
+      <div class="mut num">${n} תנועות · מאז ${started.getDate()}.${started.getMonth() + 1}</div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn primary" id="trip-end">סיום הטיול</button>
+      </div>`;
+    el.style.display = "";
+  } else if (past.length) {
+    el.innerHTML = `
+      <div class="row spread" style="margin-bottom:4px">
+        <h3 style="font-size:15px">✈️ טיולים</h3>
+        <button class="btn primary" id="trip-start">התחל טיול</button>
+      </div>` +
+      past.slice(0, 4).map((t) => {
+        const sp = tripSpent(t.id), ok = sp <= t.budget;
+        return `<div class="tx-item">
+          <span class="tx-emoji">✈️</span>
+          <span class="tx-main"><div class="tx-name">${esc(t.name)}</div>
+          <div class="tx-time">${new Date(t.start).getDate()}.${new Date(t.start).getMonth() + 1}–${new Date(t.end).getDate()}.${new Date(t.end).getMonth() + 1} · ${fmt(sp)} מ-${fmt(t.budget)}</div></span>
+          <span class="badge ${ok ? "ok" : "over"}">${ok ? "✓" : "חריגה"}</span>
+        </div>`;
+      }).join("");
+    el.style.display = "";
+  } else {
+    el.innerHTML = `
+      <div class="row spread">
+        <div><h3 style="font-size:15px">✈️ מצב טיול</h3>
+          <p class="mut" style="margin:2px 0 0">תקציב נפרד לחופשה — הוצאות הטיול לא מתערבבות בחודשי</p></div>
+      </div>
+      <div class="btn-row" style="margin-top:10px"><button class="btn primary" id="trip-start">התחל טיול</button></div>`;
+    el.style.display = "";
+  }
+}
+function openTripModal() {
+  modal(`
+    <h3>טיול חדש ✈️</h3>
+    <div class="field"><label>שם הטיול</label><input id="tr-name" placeholder="למשל: יוון, סופ״ש באילת" autocomplete="off"></div>
+    <div class="field"><label>תקציב לטיול (₪)</label><input type="number" id="tr-budget" min="0" inputmode="numeric" placeholder="3000"></div>
+    <div class="btn-row">
+      <button class="btn primary" id="tr-save">התחל</button>
+      <button class="btn" id="tr-cancel">ביטול</button>
+    </div>`);
+  $("#tr-save").onclick = () => {
+    const name = $("#tr-name").value.trim();
+    const budget = Math.max(0, parseFloat($("#tr-budget").value) || 0);
+    if (!name) return;
+    S.trips.push({ id: uid(), name, budget, start: new Date().toISOString(), end: null });
+    txBucket = "travel";
+    save(); closeModal(); render();
+    showToast(`מצב טיול הופעל: ${name} ✈️`, false);
+  };
+  $("#tr-cancel").onclick = closeModal;
+}
+function endTrip() {
+  const trip = activeTrip(); if (!trip) return;
+  const spent = tripSpent(trip.id);
+  modal(`
+    <h3>לסיים את "${esc(trip.name)}"?</h3>
+    <p class="sub">סה"כ הוצאת ${fmt(spent)} מתוך ${fmt(trip.budget)}${spent <= trip.budget ? " — בתקציב ✓" : ` — חריגה של ${fmt(spent - trip.budget)}`}.</p>
+    <div class="btn-row">
+      <button class="btn primary" id="te-yes">סיים טיול</button>
+      <button class="btn" id="te-no">חזרה</button>
+    </div>`);
+  $("#te-yes").onclick = () => {
+    trip.end = new Date().toISOString();
+    if (txBucket === "travel") txBucket = inWeekend(new Date()) ? "weekend" : "base";
+    save(); closeModal(); render();
+  };
+  $("#te-no").onclick = closeModal;
+}
+document.body.addEventListener("click", (e) => {
+  if (e.target.closest("#trip-start")) openTripModal();
+  else if (e.target.closest("#trip-end")) endTrip();
+});
 
 function renderMonthTx() {
   const m = monthTotals(mYear, mMonth);
