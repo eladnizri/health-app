@@ -689,13 +689,11 @@ $("#repeat-last").addEventListener("click", () => {
   txType = "expense";
   syncBucketButtons();
   updateBudgetStrip();
-  $("#note-input").value = (last.note || "");
-  // Auto-select category
-  document.querySelectorAll(".cat-btn").forEach((btn) => {
-    if (btn.dataset.cat === last.cat) btn.click();
-  });
   renderAmount();
-  showToast(`חוזר: ${catById(last.cat).emoji} ${catById(last.cat).name}`, false);
+  $("#note-input").value = (last.note || "");
+  showToast(`חוזר: ${catById(last.cat).emoji} ${catById(last.cat).name} — בחר קטגוריה לשמירה`, false);
+  // Scroll to categories
+  setTimeout(() => document.querySelector("#cats").scrollIntoView({ behavior: "smooth", block: "nearest" }), 200);
 });
 $("#type-toggle").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
