@@ -1463,7 +1463,14 @@ function openTxModal(id) {
     t.amount = parseFloat($("#e-amount").value) || t.amount;
     if (t.type === "expense") t.cat = $("#e-cat").value;
     t.note = $("#e-note").value.trim() || null;
-    const nts = $("#e-ts").value; if (nts) t.ts = new Date(nts).toISOString();
+    const nts = $("#e-ts").value; if (nts) {
+      t.ts = new Date(nts).toISOString();
+      // Auto-assign to weekend if the new date falls within a weekend window
+      if (t.type === "expense") {
+        const w = inWeekend(t.ts);
+        if (w) t.bucket = "weekend";
+      }
+    }
     save(); closeModal(); render();
   };
   $("#e-del").onclick = () => { S.tx = S.tx.filter((x) => x.id !== id); save(); closeModal(); render(); };
