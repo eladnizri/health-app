@@ -65,7 +65,7 @@ input, select { font: inherit; color: var(--ink); background: var(--page);
 input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .num { font-variant-numeric: tabular-nums; }
 
-.screen { display: none; padding: 12px 14px 20px; }
+.screen { display: none; padding: 8px 14px 16px; }
 .screen.active { display: block; animation: fade .18s ease; }
 @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .card { background: var(--surface); border: 1px solid var(--border);
@@ -89,31 +89,31 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 
 /* ---------- report screen ---------- */
 .amount-display {
-  text-align: center; font-size: 52px; font-weight: 800; letter-spacing: 1px;
-  padding: 6px 0 2px; min-height: 70px;
+  text-align: center; font-size: 42px; font-weight: 800; letter-spacing: 1px;
+  padding: 1px 0; min-height: 44px;
 }
-.amount-display .cur { font-size: 30px; color: var(--muted); font-weight: 600; }
+.amount-display .cur { font-size: 26px; color: var(--muted); font-weight: 600; }
 .amount-display.zero { color: var(--baseline); }
 .type-toggle { display: flex; background: var(--surface); border: 1px solid var(--border);
   border-radius: 999px; padding: 3px; width: fit-content; margin: 0 auto 6px; }
 .type-toggle button { padding: 5px 18px; border-radius: 999px; font-size: 13.5px;
   font-weight: 600; color: var(--ink-2); }
 .type-toggle button.on { background: var(--accent); color: #fff; }
-.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0;
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin: 6px 0 0;
   direction: ltr; /* dialer-style 1-2-3 left-to-right */ }
 .keypad button {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-  font-size: 26px; font-weight: 600; padding: 13px 0;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 13px;
+  font-size: 23px; font-weight: 600; padding: 8px 0;
 }
 .keypad button:active { background: var(--grid); }
 .note-row input { width: 100%; }
 .cats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
 .cat-btn {
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-  padding: 10px 4px; text-align: center; font-size: 13px; font-weight: 600;
+  padding: 8px 4px; text-align: center; font-size: 12.5px; font-weight: 600;
   display: flex; flex-direction: column; gap: 2px; align-items: center;
 }
-.cat-btn .em { font-size: 22px; }
+.cat-btn .em { font-size: 20px; }
 .cat-btn:active { background: var(--grid); }
 .save-income {
   width: 100%; background: var(--accent); color: #fff; font-weight: 700;
@@ -208,34 +208,82 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 .empty { text-align: center; color: var(--muted); padding: 22px 0; font-size: 14px; }
 .insight-line { display: flex; gap: 8px; padding: 5px 0; font-size: 14.5px; align-items: baseline; }
 .insight-line .em { flex: none; }
+
+/* ---------- compact report layout ---------- */
+.budget-strip { border-radius: 12px; padding: 7px 12px; margin: 2px 0 6px;
+  font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--border); background: var(--surface); }
+.budget-strip .bs-bar { flex: 1; height: 7px; border-radius: 4px; background: var(--ring-track);
+  overflow: hidden; direction: ltr; }
+.budget-strip .bs-bar > div { height: 100%; border-radius: 4px; }
+.budget-strip .bs-amt { flex: none; direction: ltr; unicode-bidi: isolate; }
+.seg { display: flex; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 999px; padding: 3px; margin: 0 auto 4px; width: fit-content; }
+.seg button { padding: 5px 16px; border-radius: 999px; font-size: 13.5px; font-weight: 600;
+  color: var(--ink-2); white-space: nowrap; }
+.seg button.on { background: var(--accent); color: #fff; }
+.bucket-seg { width: 100%; }
+.bucket-seg button { flex: 1; padding: 6px 4px; }
+.bucket-seg button.on { background: var(--accent); }
+.cats-strip { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 4px;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.cats-strip::-webkit-scrollbar { display: none; }
+.cats-strip .cat-btn { flex: 0 0 auto; width: 78px; }
+.note-inline { width: 100%; padding: 6px 12px; margin-bottom: 3px; }
+
+/* ---------- vertical bar chart (trends) ---------- */
+.vchart { display: flex; align-items: flex-end; gap: 6px; height: 118px;
+  direction: ltr; padding-top: 16px; }
+.vbar-col { flex: 1; min-width: 0; display: flex; flex-direction: column;
+  justify-content: flex-end; align-items: center; height: 100%; }
+.vbar-wrap { width: 100%; display: flex; justify-content: center; align-items: flex-end;
+  height: 100%; position: relative; }
+.vbar { width: 100%; max-width: 30px; border-radius: 5px 5px 0 0; background: var(--accent);
+  position: relative; min-height: 2px; }
+.vbar.over { background: var(--crit); }
+.vbar .vval { position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+  font-size: 9.5px; font-weight: 700; white-space: nowrap; color: var(--ink-2); }
+.vlab { font-size: 9.5px; color: var(--muted); margin-top: 4px; direction: ltr; white-space: nowrap; }
+.chart-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 20px 0; }
+.budget-line { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--baseline); }
+.budget-line span { position: absolute; top: -8px; right: 0; font-size: 9px; color: var(--muted);
+  background: var(--surface); padding: 0 3px; }
 </style>
 </head>
 <body>
 
 <!-- ================= REPORT ================= -->
 <section id="s-report" class="screen active">
-  <div class="card status-card" id="status-card"></div>
-  <div class="type-toggle" id="type-toggle">
+  <div id="budget-strip" class="budget-strip"></div>
+  <div class="seg" id="type-toggle">
     <button data-type="expense" class="on">הוצאה</button>
     <button data-type="income">הכנסה</button>
   </div>
+  <div class="seg bucket-seg" id="bucket-toggle">
+    <button data-bucket="base">בסיס (חול)</button>
+    <button data-bucket="weekend">סופ"ש</button>
+    <button data-bucket="other">אחר</button>
+  </div>
   <div class="amount-display zero" id="amount-display"><span class="cur">₪</span>0</div>
+  <input id="note-input" class="note-inline" placeholder="הערה (אופציונלי)" autocomplete="off">
+  <div class="cats-strip" id="cats" data-noswipe></div>
+  <button class="save-income" id="save-income" style="display:none">שמור הכנסה ✓</button>
   <div class="keypad" id="keypad">
     <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
     <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
     <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
     <button data-k=".">.</button><button data-k="0">0</button><button data-k="del">⌫</button>
   </div>
-  <div class="note-row"><input id="note-input" placeholder="הערה (אופציונלי)" autocomplete="off"></div>
-  <div class="cats" id="cats"></div>
-  <button class="save-income" id="save-income" style="display:none">שמור הכנסה ✓</button>
-  <p class="hint mut" id="report-hint">מקלידים סכום → נוגעים בקטגוריה → נשמר</p>
 </section>
 
 <!-- ================= WEEKEND ================= -->
 <section id="s-weekend" class="screen">
   <h2 style="font-size:19px;margin:6px 2px">סופי שבוע</h2>
   <div class="card" id="wk-current"></div>
+  <div class="card">
+    <h3 style="font-size:15px">מגמת הוצאות סופ"ש</h3>
+    <div id="wk-chart"></div>
+  </div>
   <div class="card" id="wk-insights"></div>
   <h3 style="font-size:15px;margin:14px 2px 4px">היסטוריית סופ"שים</h3>
   <div id="wk-history"></div>
@@ -249,7 +297,12 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
     <button id="m-next">›</button>
   </div>
   <div class="kpis" id="m-kpis"></div>
+  <div class="card" id="m-budget"></div>
   <div class="card" id="m-weekend-share"></div>
+  <div class="card">
+    <h3 style="font-size:15px">מגמה חודשית</h3>
+    <div id="m-chart"></div>
+  </div>
   <div class="card">
     <h3 style="font-size:15px">לאן הלך הכסף</h3>
     <div id="m-cats"></div>
@@ -275,6 +328,10 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
     <div class="set-row">
       <label>תקציב סופ"ש (₪)</label>
       <input type="number" id="set-budget" min="0" inputmode="numeric">
+    </div>
+    <div class="set-row">
+      <label>תקציב חודשי - הוצאות מדווחות (₪)<br><span class="mut">0 = כבוי</span></label>
+      <input type="number" id="set-monthly" min="0" inputmode="numeric">
     </div>
     <div class="set-row">
       <label>תחילת הסופ"ש</label>
@@ -334,7 +391,7 @@ const DAY_NAMES = ["ראשון","שני","שלישי","רביעי","חמישי",
 const CAT_COLORS = ["var(--c1)","var(--c2)","var(--c3)","var(--c4)","var(--c5)","var(--c6)"];
 
 const DEFAULTS = () => ({
-  settings: { weekendBudget: 350, startDay: 4, startHour: 18, endDay: 6, endHour: 24 },
+  settings: { weekendBudget: 350, monthlyBudget: 0, startDay: 4, startHour: 18, endDay: 6, endHour: 24 },
   categories: [
     { id: "eat",   name: "אוכל בחוץ",  emoji: "🍔" },
     { id: "market",name: "סופר",       emoji: "🛒" },
@@ -343,7 +400,7 @@ const DEFAULTS = () => ({
     { id: "shop",  name: "קניות",      emoji: "🛍️" },
     { id: "other", name: "אחר",        emoji: "📦" },
   ],
-  tx: [],     // {id, type:'expense'|'income', amount, cat, note, ts}
+  tx: [],     // {id, type:'expense'|'income', amount, cat, note, ts, bucket:'weekend'|'base'|'other'}
   fixed: [],  // {id, type:'expense'|'income', name, amount}
 });
 
@@ -353,7 +410,16 @@ function load() {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return DEFAULTS();
     const parsed = JSON.parse(raw);
-    return { ...DEFAULTS(), ...parsed, settings: { ...DEFAULTS().settings, ...parsed.settings } };
+    const s = { ...DEFAULTS(), ...parsed, settings: { ...DEFAULTS().settings, ...parsed.settings } };
+    // migrate old expenses that predate manual buckets: tag by their timestamp
+    (s.tx || []).forEach((t) => {
+      if (t.type === "expense" && !t.bucket) {
+        const inW = t.ts && (() => { const w = weekendWindow(new Date(t.ts), s.settings);
+          const d = new Date(t.ts); return d >= w.start && d < w.end; })();
+        t.bucket = inW ? "weekend" : "base";
+      }
+    });
+    return s;
   } catch { return DEFAULTS(); }
 }
 function save() { localStorage.setItem(LS_KEY, JSON.stringify(S)); }
@@ -388,6 +454,24 @@ function inWeekend(ts) {
   const t = new Date(ts);
   return t >= w.start && t < w.end ? w : null;
 }
+/* The weekend a (manually-tagged) expense belongs to: the window containing it,
+   otherwise the nearest window by time - so "weekend" shopping done Thursday
+   afternoon lands on the upcoming weekend, not the one that just ended. */
+function weekendOf(ts) {
+  const t = new Date(ts);
+  const w = weekendWindow(t);
+  if (t < w.end) return w;
+  const nextStart = new Date(w.start); nextStart.setDate(nextStart.getDate() + 7);
+  const nx = weekendWindow(nextStart);
+  return (nx.start - t) < (t - w.end) ? nx : w;
+}
+function upcomingOrCurrentWeekend() {
+  const now = new Date();
+  const w = weekendWindow(now);
+  if (now < w.end) return w;
+  const ns = new Date(w.start); ns.setDate(ns.getDate() + 7);
+  return weekendWindow(ns);
+}
 function nextWeekendStart(now) {
   const w = weekendWindow(now);
   if (now >= w.end) {
@@ -402,9 +486,9 @@ const catColor = (id) => {
   return CAT_COLORS[(i >= 0 ? i : 5) % CAT_COLORS.length];
 };
 
-/* expenses of a given weekend window */
+/* expenses tagged as weekend that belong to a given weekend window */
 const weekendTx = (w) =>
-  S.tx.filter((t) => t.type === "expense" && new Date(t.ts) >= w.start && new Date(t.ts) < w.end);
+  S.tx.filter((t) => t.type === "expense" && t.bucket === "weekend" && weekendOf(t.ts).id === w.id);
 const sum = (list) => list.reduce((a, t) => a + t.amount, 0);
 
 /* completed weekends (before current), newest first */
@@ -449,7 +533,8 @@ document.getElementById("tabbar").addEventListener("click", (e) => {
 /* swipe between screens (left = next screen, right = previous) */
 let tsx = 0, tsy = 0, swiping = false;
 document.body.addEventListener("touchstart", (e) => {
-  if (e.touches.length !== 1 || $("#modal-back").classList.contains("show")) { swiping = false; return; }
+  if (e.touches.length !== 1 || $("#modal-back").classList.contains("show")
+      || e.target.closest("[data-noswipe]")) { swiping = false; return; }
   tsx = e.touches[0].clientX; tsy = e.touches[0].clientY; swiping = true;
 }, { passive: true });
 document.body.addEventListener("touchend", (e) => {
@@ -464,6 +549,7 @@ document.body.addEventListener("touchend", (e) => {
 /* ============================ report screen ========================== */
 let amountStr = "";
 let txType = "expense";
+let txBucket = inWeekend(new Date()) ? "weekend" : "base";
 
 function renderAmount() {
   const disp = $("#amount-display");
@@ -487,16 +573,58 @@ $("#type-toggle").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
   txType = b.dataset.type;
   document.querySelectorAll("#type-toggle button").forEach((x) => x.classList.toggle("on", x === b));
-  $("#cats").style.display = txType === "expense" ? "" : "none";
-  $("#save-income").style.display = txType === "income" ? "" : "none";
-  updateReportHint();
+  const isExp = txType === "expense";
+  $("#cats").style.display = isExp ? "" : "none";
+  $("#bucket-toggle").style.display = isExp ? "" : "none";
+  $("#save-income").style.display = isExp ? "none" : "";
+  updateBudgetStrip();
 });
-function updateReportHint() {
-  const el = $("#report-hint");
-  if (txType === "income") { el.textContent = "מקלידים סכום → שמור הכנסה"; return; }
-  el.textContent = inWeekend(new Date())
-    ? "🌅 סופ\"ש פעיל — ההוצאה תיכנס לתקציב הסופ\"ש"
-    : "📅 יום חול — ההוצאה תיכנס להוצאות החודש";
+$("#bucket-toggle").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  txBucket = b.dataset.bucket;
+  syncBucketButtons();
+  updateBudgetStrip();
+});
+function syncBucketButtons() {
+  document.querySelectorAll("#bucket-toggle button")
+    .forEach((x) => x.classList.toggle("on", x.dataset.bucket === txBucket));
+}
+
+/* Live strip at the top of the report screen: what this expense counts against */
+function updateBudgetStrip() {
+  const el = $("#budget-strip");
+  if (txType === "income") {
+    el.innerHTML = `<span>💰 הכנסה חדשה — תיכנס להכנסות החודש</span>`;
+    return;
+  }
+  if (txBucket === "weekend") {
+    const now = new Date();
+    const w = weekendOf(now);           // the window a new weekend expense files into
+    const budget = S.settings.weekendBudget;
+    const spent = sum(weekendTx(w));
+    const left = budget - spent;
+    const frac = budget > 0 ? Math.max(0, left) / budget : 0;
+    const color = left < 0 ? "var(--crit)" : frac < 0.2 ? "var(--warn)" : "var(--good)";
+    const label = inWeekend(now) ? "סופ\"ש" : (w.end < now ? "סופ\"ש אחרון" : "לסופ\"ש הבא");
+    el.innerHTML = `<span>🌅 ${label}</span>
+      <span class="bs-bar"><div style="width:${Math.min(100, budget ? spent / budget * 100 : 0)}%;background:${color}"></div></span>
+      <span class="bs-amt" style="color:${color}">${left >= 0 ? "נשארו " + fmt(left) : "חריגה " + fmt(-left)}</span>`;
+  } else if (txBucket === "base") {
+    const now = new Date();
+    const m = monthTotals(now.getFullYear(), now.getMonth());
+    const mb = S.settings.monthlyBudget;
+    if (mb > 0) {
+      const left = mb - m.reportedOut;
+      const color = left < 0 ? "var(--crit)" : (mb ? Math.max(0, left) / mb : 0) < 0.2 ? "var(--warn)" : "var(--good)";
+      el.innerHTML = `<span>📅 תקציב חודשי</span>
+        <span class="bs-bar"><div style="width:${Math.min(100, mb ? m.reportedOut / mb * 100 : 0)}%;background:${color}"></div></span>
+        <span class="bs-amt" style="color:${color}">${left >= 0 ? "נשארו " + fmt(left) : "חריגה " + fmt(-left)}</span>`;
+    } else {
+      el.innerHTML = `<span>📅 יום חול — נכנס להוצאות החודש</span><span class="bs-amt">${fmt(m.reportedOut)} החודש</span>`;
+    }
+  } else {
+    el.innerHTML = `<span>🏷️ "אחר" — נכנס להוצאות החודש (בנפרד מהסופ"ש)</span>`;
+  }
 }
 
 function renderCats() {
@@ -515,18 +643,18 @@ function addTx(type, cat) {
   const amount = parseFloat(amountStr);
   if (!amount || amount <= 0) { showToast("קודם מקלידים סכום 🙂", false); return; }
   const t = { id: uid(), type, amount, cat, note: $("#note-input").value.trim() || null,
-              ts: new Date().toISOString() };
+              ts: new Date().toISOString(), bucket: type === "expense" ? txBucket : null };
   S.tx.push(t); save();
   lastAddedId = t.id;
   amountStr = ""; $("#note-input").value = ""; renderAmount();
-  const w = inWeekend(t.ts);
   let msg;
   if (type === "income") msg = `נשמרה הכנסה של ${fmt2(amount)} ✓`;
-  else if (w) {
-    const left = S.settings.weekendBudget - sum(weekendTx(w));
+  else if (t.bucket === "weekend") {
+    const left = S.settings.weekendBudget - sum(weekendTx(weekendOf(t.ts)));
     msg = left >= 0 ? `נשמר ✓ נשארו ${fmt(left)} לסופ"ש`
                     : `נשמר ✓ חריגה של ${fmt(-left)} מתקציב הסופ"ש`;
-  } else msg = `נשמר ✓ ${fmt2(amount)} · נכנס להוצאות החודש`;
+  } else if (t.bucket === "other") msg = `נשמר ✓ ${fmt2(amount)} · הוצאת "אחר"`;
+  else msg = `נשמר ✓ ${fmt2(amount)} · נכנס להוצאות החודש`;
   showToast(msg, true);
   render();
 }
@@ -555,40 +683,24 @@ function ringSvg(frac, color) {
       stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/>
   </svg>`;
 }
-function renderStatus() {
-  const el = $("#status-card");
-  const now = new Date();
-  const w = inWeekend(now);
-  if (w) {
-    const spent = sum(weekendTx(w));
-    const budget = S.settings.weekendBudget;
-    const left = budget - spent;
-    const frac = budget > 0 ? Math.max(0, left) / budget : 0;
-    const [color, icon, label] =
-      left < 0            ? ["var(--crit)", "❗", "חריגה מהתקציב"] :
-      frac < 0.15         ? ["var(--crit)", "⚠️", "נשאר מעט"] :
-      frac < 0.4          ? ["var(--warn)", "🙂", "בקצב סביר"] :
-                            ["var(--good)", "✅", "אתה בתקציב"];
-    el.innerHTML = `
-      <div class="ring-wrap">${ringSvg(frac, color)}
-        <div class="ring-val"><span class="amt num">${fmt(Math.abs(left))}</span>
-        <span class="lbl">${left >= 0 ? "נשארו" : "חריגה"}</span></div>
-      </div>
-      <div class="status-main">
-        <div class="status-title">${icon} ${label}</div>
-        <div class="sub status-note num">הוצאת ${fmt(spent)} מתוך ${fmt(budget)} תקציב סופ"ש</div>
-        <div class="mut">הסופ"ש נגמר ב${DAY_NAMES[w.end.getDay() === 0 && S.settings.endHour === 24 ? 6 : w.end.getDay()]}${S.settings.endHour === 24 ? " בחצות" : " ב-" + S.settings.endHour + ":00"}</div>
-      </div>`;
-  } else {
-    const nx = nextWeekendStart(now);
-    const m = monthTotals(now.getFullYear(), now.getMonth());
-    el.innerHTML = `
-      <div class="status-main">
-        <div class="status-title">🗓️ הסופ"ש הבא: ${DAY_NAMES[nx.getDay()]} ב-${nx.getHours()}:00</div>
-        <div class="sub status-note num">תקציב מוכן: ${fmt(S.settings.weekendBudget)}</div>
-        <div class="mut num">החודש עד עכשיו: הוצאות ${fmt(m.out)} · הכנסות ${fmt(m.inc)}</div>
-      </div>`;
+/* vertical bar chart (oldest→newest, left→right). items: [{label,value,over}] */
+function vbars(items, budget) {
+  if (!items.length || items.every((x) => !x.value)) {
+    return `<div class="chart-empty">אין עדיין מספיק נתונים לגרף</div>`;
   }
+  const max = Math.max(budget || 0, ...items.map((x) => x.value)) * 1.12 || 1;
+  const line = budget > 0
+    ? `<div class="budget-line" style="bottom:${16 + (budget / max) * (118 - 16)}px"><span>תקציב ${fmt(budget)}</span></div>`
+    : "";
+  return `<div class="vchart" style="position:relative">${line}` + items.map((x) => `
+    <div class="vbar-col">
+      <div class="vbar-wrap">
+        <div class="vbar ${x.over ? "over" : ""}" style="height:${Math.max(2, x.value / max * 100)}%">
+          ${x.value ? `<span class="vval num">${fmt(x.value)}</span>` : ""}
+        </div>
+      </div>
+      <div class="vlab">${x.label}</div>
+    </div>`).join("") + `</div>`;
 }
 
 /* ============================ weekend screen ========================= */
@@ -603,14 +715,39 @@ function renderWeekend() {
   const rangeLabel = (win) =>
     `${win.start.getDate()}.${win.start.getMonth() + 1} - ${new Date(win.end - 1).getDate()}.${new Date(win.end - 1).getMonth() + 1}`;
 
+  const left = budget - spent;
+  const frac = budget > 0 ? Math.max(0, left) / budget : 0;
+  const ringColor = left < 0 ? "var(--crit)" : frac < 0.2 ? "var(--warn)" : "var(--good)";
   $("#wk-current").innerHTML = `
-    <div class="row spread">
-      <h3 style="font-size:15.5px">${isLive ? "הסופ\"ש הנוכחי" : "הסופ\"ש האחרון"} <span class="mut">(${rangeLabel(w)})</span></h3>
-      <span class="badge ${spent <= budget ? "ok" : "over"}">${spent <= budget ? "✓ בתקציב" : "✗ חריגה"}</span>
+    <div class="status-card" style="margin-bottom:10px">
+      <div class="ring-wrap">${ringSvg(frac, ringColor)}
+        <div class="ring-val"><span class="amt num" style="color:${ringColor}">${fmt(Math.abs(left))}</span>
+        <span class="lbl">${left >= 0 ? "נשארו" : "חריגה"}</span></div>
+      </div>
+      <div class="status-main">
+        <div class="status-title">${isLive ? "הסופ\"ש הנוכחי" : "הסופ\"ש האחרון"}</div>
+        <div class="mut">${rangeLabel(w)}</div>
+        <div class="sub num" style="margin-top:4px">${fmt(spent)} מתוך ${fmt(budget)}</div>
+        <span class="badge ${spent <= budget ? "ok" : "over"}">${spent <= budget ? "✓ בתקציב" : "✗ חריגה"}</span>
+      </div>
     </div>
-    <div class="sub num" style="margin:4px 0">${fmt(spent)} מתוך ${fmt(budget)}</div>
-    <div class="meter"><div style="width:${Math.min(100, budget ? spent / budget * 100 : 0)}%;background:${spent > budget ? "var(--crit)" : "var(--good)"}"></div></div>
     ${txs.length ? txs.map(txItem).join("") : `<div class="empty">עוד אין הוצאות בסופ"ש הזה</div>`}`;
+
+  // trend chart: last weekends, oldest -> newest, ending with the current one
+  const chartWins = [];
+  let cw = { start: new Date(w.start), end: new Date(w.end), id: w.id };
+  for (let i = 0; i < 8; i++) {
+    chartWins.unshift({ start: new Date(cw.start), end: new Date(cw.end), id: cw.id });
+    cw = { start: new Date(cw.start.getTime() - 7 * 864e5), end: new Date(cw.end.getTime() - 7 * 864e5) };
+    cw.id = cw.start.toISOString().slice(0, 10);
+  }
+  let items = chartWins.map((win) => {
+    const v = sum(weekendTx(win));
+    return { label: `${win.start.getDate()}.${win.start.getMonth() + 1}`, value: v, over: v > budget };
+  });
+  const firstNZ = items.findIndex((x) => x.value > 0);
+  if (firstNZ > 0) items = items.slice(firstNZ);
+  $("#wk-chart").innerHTML = vbars(items, budget);
 
   // insights
   const hist = pastWeekends().filter((x) => x.id !== w.id);
@@ -680,9 +817,13 @@ function monthTotals(y, m) {
   const txs = monthTx(y, m);
   const fixedIn = S.fixed.filter((f) => f.type === "income").reduce((a, f) => a + f.amount, 0);
   const fixedOut = S.fixed.filter((f) => f.type === "expense").reduce((a, f) => a + f.amount, 0);
+  const exp = txs.filter((t) => t.type === "expense");
+  const reportedOut = sum(exp);                    // variable/reported expenses only
   const inc = fixedIn + sum(txs.filter((t) => t.type === "income"));
-  const out = fixedOut + sum(txs.filter((t) => t.type === "expense"));
-  return { inc, out, net: inc - out, txs, fixedIn, fixedOut };
+  const out = fixedOut + reportedOut;
+  const byBucket = (b) => sum(exp.filter((t) => t.bucket === b));
+  return { inc, out, net: inc - out, txs, fixedIn, fixedOut, reportedOut,
+           weekendOut: byBucket("weekend"), baseOut: byBucket("base"), otherOut: byBucket("other") };
 }
 $("#m-prev").addEventListener("click", () => { mMonth--; if (mMonth < 0) { mMonth = 11; mYear--; } renderMonth(); });
 $("#m-next").addEventListener("click", () => { mMonth++; if (mMonth > 11) { mMonth = 0; mYear++; } renderMonth(); });
@@ -695,12 +836,43 @@ function renderMonth() {
     <div class="kpi"><div class="v num">${fmt(m.out)}</div><div class="l">הוצאות</div></div>
     <div class="kpi"><div class="v num ${m.net >= 0 ? "pos" : "neg"}">${m.net >= 0 ? "+" : "-"}${fmt(Math.abs(m.net))}</div><div class="l">מאזן</div></div>`;
 
-  // weekend share of month expenses
-  const wkSpent = sum(m.txs.filter((t) => t.type === "expense" && inWeekend(t.ts)));
-  const repOut = sum(m.txs.filter((t) => t.type === "expense"));
+  // monthly budget (reported expenses) + projection for the current month
+  const mb = S.settings.monthlyBudget;
+  const isThisMonth = mYear === new Date().getFullYear() && mMonth === new Date().getMonth();
+  if (mb > 0) {
+    const left = mb - m.reportedOut;
+    const color = left < 0 ? "var(--crit)" : (Math.max(0, left) / mb) < 0.2 ? "var(--warn)" : "var(--good)";
+    let proj = "";
+    if (isThisMonth) {
+      const dim = new Date(mYear, mMonth + 1, 0).getDate();
+      const dnow = new Date().getDate();
+      const projected = Math.round(m.reportedOut / dnow * dim);
+      proj = `<div class="mut num" style="margin-top:6px">בקצב הזה: כ-${fmt(projected)} עד סוף החודש${projected > mb ? " ⚠️ מעל התקציב" : ""}</div>`;
+    }
+    $("#m-budget").innerHTML = `
+      <div class="row spread"><span class="sub">🎯 תקציב חודשי (מדווחות)</span>
+        <span class="num" style="font-weight:800;color:${color}">${left >= 0 ? "נשארו " + fmt(left) : "חריגה " + fmt(-left)}</span></div>
+      <div class="meter" style="margin:8px 0 0"><div style="width:${Math.min(100, m.reportedOut / mb * 100)}%;background:${color}"></div></div>
+      <div class="mut num" style="margin-top:4px">${fmt(m.reportedOut)} מתוך ${fmt(mb)}</div>${proj}`;
+    $("#m-budget").style.display = "";
+  } else {
+    $("#m-budget").style.display = "none";
+  }
+
+  // where the reported money went: weekend / base / other split
   $("#m-weekend-share").innerHTML = `
-    <div class="row spread"><span class="sub">🌅 מזה בסופ"שים</span>
-    <span class="num" style="font-weight:800">${fmt(wkSpent)}${repOut ? ` <span class="mut">(${Math.round(wkSpent / repOut * 100)}% מהמדווחות)</span>` : ""}</span></div>`;
+    <div class="row spread"><span class="sub">🌅 סופ"שים</span><span class="num" style="font-weight:700">${fmt(m.weekendOut)}${m.reportedOut ? ` <span class="mut">(${Math.round(m.weekendOut / m.reportedOut * 100)}%)</span>` : ""}</span></div>
+    <div class="row spread" style="margin-top:5px"><span class="sub">📅 בסיס (חול)</span><span class="num" style="font-weight:700">${fmt(m.baseOut)}</span></div>
+    ${m.otherOut ? `<div class="row spread" style="margin-top:5px"><span class="sub">🏷️ אחר</span><span class="num" style="font-weight:700">${fmt(m.otherOut)}</span></div>` : ""}`;
+
+  // monthly trend: reported expenses per month, last 6 months ending at viewed month
+  const trend = [];
+  for (let i = 5; i >= 0; i--) {
+    let yy = mYear, mm = mMonth - i;
+    while (mm < 0) { mm += 12; yy--; }
+    trend.push({ label: `${mm + 1}/${String(yy).slice(2)}`, value: monthTotals(yy, mm).reportedOut, over: false });
+  }
+  $("#m-chart").innerHTML = vbars(trend, mb > 0 ? mb : 0);
 
   // categories
   const catSums = {};
@@ -801,6 +973,7 @@ $("#fixed-add").addEventListener("click", () => openFixedModal(null));
 /* ============================== settings ============================= */
 function renderSettings() {
   $("#set-budget").value = S.settings.weekendBudget;
+  $("#set-monthly").value = S.settings.monthlyBudget || 0;
   const dayOpts = (sel) => DAY_NAMES.map((d, i) => `<option value="${i}" ${i === sel ? "selected" : ""}>${d}</option>`).join("");
   const hourOpts = (sel) => Array.from({ length: 25 }, (_, h) =>
     `<option value="${h}" ${h === sel ? "selected" : ""}>${h === 24 ? "חצות (סוף היום)" : h + ":00"}</option>`).join("");
@@ -815,9 +988,10 @@ function renderSettings() {
       <button class="btn danger" data-delcat="${c.id}">הסרה</button>
     </div>`).join("");
 }
-["set-budget", "set-start-day", "set-start-hour", "set-end-day", "set-end-hour"].forEach((id) => {
+["set-budget", "set-monthly", "set-start-day", "set-start-hour", "set-end-day", "set-end-hour"].forEach((id) => {
   document.getElementById(id).addEventListener("change", () => {
     S.settings.weekendBudget = Math.max(0, parseFloat($("#set-budget").value) || 0);
+    S.settings.monthlyBudget = Math.max(0, parseFloat($("#set-monthly").value) || 0);
     S.settings.startDay = +$("#set-start-day").value;
     S.settings.startHour = +$("#set-start-hour").value;
     S.settings.endDay = +$("#set-end-day").value;
@@ -907,9 +1081,10 @@ $("#wipe").addEventListener("click", () => {
 
 /* ============================== render all =========================== */
 function render() {
-  renderStatus(); renderCats(); renderAmount(); updateReportHint();
+  renderCats(); renderAmount(); syncBucketButtons(); updateBudgetStrip();
   renderWeekend(); renderMonth(); renderSettings();
 }
+syncBucketButtons();
 render();
 
 /* offline support (works when served over http; silently skipped otherwise) */
