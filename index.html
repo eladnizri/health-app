@@ -311,6 +311,15 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 /* transaction rows a touch airier */
 .tx-item { padding: 10px 2px; }
 .badge { padding: 2px 10px; }
+
+/* quick amounts row */
+.quick-amounts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin: 6px 0;
+  direction: ltr; }
+.qa-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 13px;
+  font-size: 14px; font-weight: 700; padding: 8px 0; box-shadow: var(--shadow-sm);
+  transition: transform .06s, background .12s; }
+.qa-btn:active { transform: scale(.97); }
+.qa-btn#repeat-last { color: var(--ink-2); font-size: 16px; }
 </style>
 </head>
 <body>
@@ -328,6 +337,12 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
     <button data-bucket="other">אחר</button>
   </div>
   <div class="amount-display zero" id="amount-display"><span class="cur">₪</span>0</div>
+  <div class="quick-amounts" id="quick-amounts">
+    <button class="qa-btn" data-qa="20">₪20</button>
+    <button class="qa-btn" data-qa="50">₪50</button>
+    <button class="qa-btn" data-qa="100">₪100</button>
+    <button class="qa-btn" id="repeat-last" title="חזור על ההוצאה האחרונה">↻</button>
+  </div>
   <input id="note-input" class="note-inline" placeholder="הערה (אופציונלי)" autocomplete="off">
   <div class="cats-strip" id="cats" data-noswipe></div>
   <button class="save-income" id="save-income" style="display:none">שמור הכנסה ✓</button>
@@ -397,6 +412,10 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
       <input type="number" id="set-monthly" min="0" inputmode="numeric">
     </div>
     <div class="set-row">
+      <label>מטרת חיסכון חודשית (₪)<br><span class="mut">0 = כבוי</span></label>
+      <input type="number" id="set-savings-goal" min="0" inputmode="numeric">
+    </div>
+    <div class="set-row">
       <label>תחילת הסופ"ש</label>
       <span class="row">
         <select id="set-start-day"></select>
@@ -454,7 +473,7 @@ const DAY_NAMES = ["ראשון","שני","שלישי","רביעי","חמישי",
 const CAT_COLORS = ["var(--c1)","var(--c2)","var(--c3)","var(--c4)","var(--c5)","var(--c6)"];
 
 const DEFAULTS = () => ({
-  settings: { weekendBudget: 350, monthlyBudget: 0, startDay: 4, startHour: 18, endDay: 6, endHour: 24 },
+  settings: { weekendBudget: 350, monthlyBudget: 0, savingsGoal: 0, startDay: 4, startHour: 18, endDay: 6, endHour: 24 },
   categories: [
     { id: "eat",   name: "אוכל בחוץ",  emoji: "🍔" },
     { id: "market",name: "סופר",       emoji: "🛒" },
@@ -625,6 +644,22 @@ function renderAmount() {
   disp.innerHTML = `<span class="cur">₪</span>${v}`;
   disp.classList.toggle("zero", !amountStr);
 }
+
+function getLastExpense() {
+  const exps = S.tx.filter((t) => t.type === "expense").sort((a, b) => b.ts.localeCompare(a.ts));
+  return exps.length ? exps[0] : null;
+}
+
+function updateRepeatButton() {
+  const btn = $("#repeat-last");
+  const last = getLastExpense();
+  btn.style.opacity = last ? "1" : "0.5";
+  btn.disabled = !last;
+  if (last) {
+    const c = catById(last.cat);
+    btn.title = `חזור: ${c.emoji} ${c.name} · ${fmt2(last.amount)}`;
+  }
+}
 $("#keypad").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
   const k = b.dataset.k;
@@ -636,6 +671,31 @@ $("#keypad").addEventListener("click", (e) => {
     amountStr = amountStr === "0" ? k : amountStr + k;
   }
   renderAmount();
+});
+
+// Quick amount buttons
+document.querySelectorAll(".qa-btn[data-qa]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    amountStr = btn.dataset.qa;
+    renderAmount();
+  });
+});
+
+// Repeat last expense
+$("#repeat-last").addEventListener("click", () => {
+  const last = getLastExpense(); if (!last) return;
+  amountStr = String(last.amount);
+  txBucket = last.bucket || "base";
+  txType = "expense";
+  syncBucketButtons();
+  updateBudgetStrip();
+  $("#note-input").value = (last.note || "");
+  // Auto-select category
+  document.querySelectorAll(".cat-btn").forEach((btn) => {
+    if (btn.dataset.cat === last.cat) btn.click();
+  });
+  renderAmount();
+  showToast(`חוזר: ${catById(last.cat).emoji} ${catById(last.cat).name}`, false);
 });
 $("#type-toggle").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
@@ -826,13 +886,27 @@ function renderWeekend() {
   } else {
     const avg = sum(withData.map((x) => ({ amount: x.total }))) / withData.length;
     const lines = [];
+
+    // Comparison to average
     if (spent > 0 && avg > 0) {
       const d = Math.round((spent / avg - 1) * 100);
       lines.push(d >= 10 ? ["📈", `הסופ"ש הזה יקר ב-${d}% מהממוצע שלך (${fmt(avg)})`]
         : d <= -10 ? ["📉", `הסופ"ש הזה חסכוני ב-${Math.abs(d)}% מהממוצע שלך (${fmt(avg)})`]
         : ["⚖️", `הסופ"ש הזה קרוב לממוצע שלך (${fmt(avg)})`]);
     } else lines.push(["Ø", `ממוצע סופ"ש: ${fmt(avg)} (על בסיס ${withData.length} סופ"שים)`]);
-    // top category across weekends
+
+    // Overspend alert / projection for current weekend
+    if (isLive && budget > 0 && txs.length > 0) {
+      const daysInWk = (w.end - w.start) / (24 * 60 * 60 * 1000);
+      const now = new Date();
+      const daysPassed = (now - w.start) / (24 * 60 * 60 * 1000);
+      const projectedEnd = spent / daysPassed * daysInWk;
+      if (projectedEnd > budget * 1.15) {
+        lines.push(["⚠️", `בקצב הזה תחרוג מהתקציב ב-${fmt(projectedEnd - budget)} בקרוב`]);
+      }
+    }
+
+    // top category
     const catSums = {};
     [...withData.flatMap((x) => x.txs), ...txs].forEach((t) => {
       catSums[t.cat || "other"] = (catSums[t.cat || "other"] || 0) + t.amount;
@@ -842,8 +916,19 @@ function renderWeekend() {
       const c = catById(top[0]);
       lines.push([c.emoji, `הכי הרבה כסף בסופ"שים הולך ל${c.name} (${fmt(top[1])} סה"כ)`]);
     }
+
+    // Budget adherence
     const okCount = withData.filter((x) => x.total <= budget).length;
-    lines.push(["🎯", `עמדת בתקציב ב-${okCount} מתוך ${withData.length} סופ"שים אחרונים`]);
+    const pct = Math.round(okCount / withData.length * 100);
+    lines.push(["🎯", `עמדת בתקציב ב-${pct}% מהסופ"שים (${okCount}/${withData.length})`]);
+
+    // Best performing weekend hint
+    const bestWeekend = withData.reduce((a, b) => a.total < b.total ? a : b);
+    const savings = Math.round((1 - bestWeekend.total / avg) * 100);
+    if (savings > 5) {
+      lines.push(["💡", `הסופ"ש הכי חסכוני שלך היה ב-${savings}% מהממוצע — אתה יכול!`]);
+    }
+
     box.innerHTML = `<h3 style="font-size:15px;margin-bottom:4px">תובנות</h3>` +
       lines.map(([em, t]) => `<div class="insight-line"><span class="em">${em}</span><span>${t}</span></div>`).join("");
   }
@@ -903,10 +988,18 @@ function renderMonth() {
   const cap = rate === null ? "" : m.net >= 0
     ? `<div class="cap" style="color:var(--good-text)">${rate}% נחסך</div>`
     : `<div class="cap" style="color:var(--crit)">גירעון</div>`;
+
+  // Savings goal tracking for current month
+  const isThisMonth = mYear === new Date().getFullYear() && mMonth === new Date().getMonth();
+  const goal = S.settings.savingsGoal;
+  const savingsKpi = goal > 0 && isThisMonth
+    ? `<div class="kpi"><div class="l">מטרת חיסכון</div><div class="v num ${m.net >= goal ? "pos" : "neg"}">${fmt(m.net)}</div><div class="cap" style="color:var(--muted)">${fmt(goal)} מטרה</div></div>`
+    : `<div class="kpi"><div class="l">חיסכון</div><div class="v num ${m.net >= 0 ? "pos" : "neg"}">${m.net >= 0 ? "+" : "-"}${fmt(Math.abs(m.net))}</div></div>`;
+
   $("#m-kpis").innerHTML = `
     <div class="kpi"><div class="l">הכנסות</div><div class="v num">${fmt(m.inc)}</div></div>
     <div class="kpi"><div class="l">הוצאות</div><div class="v num">${fmt(m.out)}</div></div>
-    <div class="kpi"><div class="l">מאזן</div><div class="v num ${m.net >= 0 ? "pos" : "neg"}">${m.net >= 0 ? "+" : "-"}${fmt(Math.abs(m.net))}</div>${cap}</div>`;
+    ${savingsKpi}`;
 
   // monthly budget (reported expenses) + projection for the current month
   const mb = S.settings.monthlyBudget;
@@ -1046,6 +1139,7 @@ $("#fixed-add").addEventListener("click", () => openFixedModal(null));
 function renderSettings() {
   $("#set-budget").value = S.settings.weekendBudget;
   $("#set-monthly").value = S.settings.monthlyBudget || 0;
+  $("#set-savings-goal").value = S.settings.savingsGoal || 0;
   const dayOpts = (sel) => DAY_NAMES.map((d, i) => `<option value="${i}" ${i === sel ? "selected" : ""}>${d}</option>`).join("");
   const hourOpts = (sel) => Array.from({ length: 25 }, (_, h) =>
     `<option value="${h}" ${h === sel ? "selected" : ""}>${h === 24 ? "חצות (סוף היום)" : h + ":00"}</option>`).join("");
@@ -1060,10 +1154,11 @@ function renderSettings() {
       <button class="btn danger" data-delcat="${c.id}">הסרה</button>
     </div>`).join("");
 }
-["set-budget", "set-monthly", "set-start-day", "set-start-hour", "set-end-day", "set-end-hour"].forEach((id) => {
+["set-budget", "set-monthly", "set-savings-goal", "set-start-day", "set-start-hour", "set-end-day", "set-end-hour"].forEach((id) => {
   document.getElementById(id).addEventListener("change", () => {
     S.settings.weekendBudget = Math.max(0, parseFloat($("#set-budget").value) || 0);
     S.settings.monthlyBudget = Math.max(0, parseFloat($("#set-monthly").value) || 0);
+    S.settings.savingsGoal = Math.max(0, parseFloat($("#set-savings-goal").value) || 0);
     S.settings.startDay = +$("#set-start-day").value;
     S.settings.startHour = +$("#set-start-hour").value;
     S.settings.endDay = +$("#set-end-day").value;
@@ -1153,10 +1248,11 @@ $("#wipe").addEventListener("click", () => {
 
 /* ============================== render all =========================== */
 function render() {
-  renderCats(); renderAmount(); syncBucketButtons(); updateBudgetStrip();
+  renderCats(); renderAmount(); syncBucketButtons(); updateBudgetStrip(); updateRepeatButton();
   renderWeekend(); renderMonth(); renderSettings();
 }
 syncBucketButtons();
+updateRepeatButton();
 render();
 
 /* offline support (works when served over http; silently skipped otherwise) */
