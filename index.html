@@ -1003,7 +1003,6 @@ function renderMonth() {
 
   // monthly budget (reported expenses) + projection for the current month
   const mb = S.settings.monthlyBudget;
-  const isThisMonth = mYear === new Date().getFullYear() && mMonth === new Date().getMonth();
   if (mb > 0) {
     const left = mb - m.reportedOut;
     const color = left < 0 ? "var(--crit)" : (Math.max(0, left) / mb) < 0.2 ? "var(--warn)" : "var(--good)";
