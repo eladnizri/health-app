@@ -55,7 +55,6 @@ body {
   background: var(--page); color: var(--ink);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 16px; line-height: 1.5;
-  padding-bottom: calc(64px + env(safe-area-inset-bottom));
   max-width: 560px; margin: 0 auto;
 }
 h1,h2,h3 { margin: 0; }
@@ -65,9 +64,16 @@ input, select { font: inherit; color: var(--ink); background: var(--page);
 input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .num { font-variant-numeric: tabular-nums; }
 
-.screen { display: none; padding: 8px 14px 16px; }
-.screen.active { display: block; animation: fade .18s ease; }
-@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.screen { display: none; padding: calc(8px + env(safe-area-inset-top)) 16px calc(72px + env(safe-area-inset-bottom)); }
+.screen.active { display: block; }
+/* report fills the viewport: keypad grows to sit just above the tab bar */
+#s-report.active { display: flex; flex-direction: column; min-height: 100dvh; }
+#s-report #keypad { flex: 1 1 auto; grid-template-rows: repeat(4, minmax(46px, 1fr)); margin-top: 8px; }
+.screen.from-next { animation: slide-next .3s cubic-bezier(.22,.61,.36,1); }
+.screen.from-prev { animation: slide-prev .3s cubic-bezier(.22,.61,.36,1); }
+@keyframes slide-next { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
+@keyframes slide-prev { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .screen.from-next, .screen.from-prev { animation: none; } }
 .card { background: var(--surface); border: 1px solid var(--border);
   border-radius: 16px; padding: 14px 16px; margin: 10px 0; }
 .mut { color: var(--muted); font-size: 13px; }
@@ -248,6 +254,63 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 .budget-line { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--baseline); }
 .budget-line span { position: absolute; top: -8px; right: 0; font-size: 9px; color: var(--muted);
   background: var(--surface); padding: 0 3px; }
+
+/* ===================== professional / statistical polish ===================== */
+body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+:root { --shadow: 0 1px 2px rgba(16,24,40,.04), 0 6px 16px rgba(16,24,40,.06);
+        --shadow-sm: 0 1px 2px rgba(16,24,40,.05); --radius: 18px; }
+@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) {
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.5); --shadow-sm: 0 1px 2px rgba(0,0,0,.4); } }
+:root[data-theme="dark"] { --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.5); --shadow-sm: 0 1px 2px rgba(0,0,0,.4); }
+
+.card { border-radius: var(--radius); box-shadow: var(--shadow); }
+.card h3 { font-size: 14px; font-weight: 700; letter-spacing: .1px; }
+.h-sub, .mut { letter-spacing: .1px; }
+
+/* section title with accent tick */
+.card > h3:first-child { position: relative; padding-inline-start: 11px; }
+.card > h3:first-child::before { content: ""; position: absolute; inset-inline-start: 0; top: 2px;
+  width: 3px; height: 14px; border-radius: 2px; background: var(--accent); opacity: .85; }
+
+/* stat tiles */
+.kpi { border-radius: 15px; box-shadow: var(--shadow-sm); padding: 11px 10px; text-align: right; }
+.kpi .l { font-size: 11px; font-weight: 600; text-transform: none; letter-spacing: .2px; margin-bottom: 2px; }
+.kpi .v { font-size: 20px; line-height: 1.1; }
+.kpi .cap { font-size: 10.5px; color: var(--muted); margin-top: 2px; font-weight: 600; }
+
+/* budget strip refined */
+.budget-strip { box-shadow: var(--shadow-sm); border-radius: 14px; }
+
+/* segmented controls */
+.seg, .type-toggle { box-shadow: var(--shadow-sm); }
+.seg button, .bucket-seg button { transition: background .15s, color .15s; }
+
+/* amount readout */
+.amount-display { background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  box-shadow: var(--shadow-sm); margin: 2px 0; padding: 7px 0; min-height: 0;
+  display: flex; align-items: center; justify-content: center; gap: 2px; }
+
+/* keypad */
+.keypad button { box-shadow: var(--shadow-sm); transition: transform .06s, background .12s; }
+.keypad button:active { transform: scale(.97); }
+.cat-btn { box-shadow: var(--shadow-sm); }
+
+/* tab bar premium */
+.tabbar { box-shadow: 0 -1px 0 var(--border), 0 -8px 24px rgba(16,24,40,.05);
+  backdrop-filter: saturate(1.4); }
+.tabbar button { position: relative; padding-top: 10px; }
+.tabbar button.on::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 26px; height: 3px; border-radius: 0 0 3px 3px; background: var(--accent); }
+.tabbar button .ic { font-size: 20px; transition: transform .15s; }
+.tabbar button.on .ic { transform: translateY(-1px) scale(1.08); }
+
+/* meters / bars rounder */
+.meter { height: 9px; border-radius: 5px; }
+.vbar { border-radius: 6px 6px 0 0; }
+
+/* transaction rows a touch airier */
+.tx-item { padding: 10px 2px; }
+.badge { padding: 2px 10px; }
 </style>
 </head>
 <body>
@@ -517,11 +580,15 @@ const $ = (q) => document.querySelector(q);
 const SCREENS = ["report", "weekend", "month", "settings"];
 let curScreen = 0;
 function goToScreen(i) {
-  curScreen = Math.max(0, Math.min(SCREENS.length - 1, i));
+  const target = Math.max(0, Math.min(SCREENS.length - 1, i));
+  const dir = target > curScreen ? 1 : target < curScreen ? -1 : 0;
+  curScreen = target;
   const name = SCREENS[curScreen];
   document.querySelectorAll(".tabbar button").forEach((x) => x.classList.toggle("on", x.dataset.s === name));
-  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
-  $("#s-" + name).classList.add("active");
+  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active", "from-next", "from-prev"));
+  const el = $("#s-" + name);
+  el.classList.add("active");
+  if (dir) el.classList.add(dir > 0 ? "from-next" : "from-prev");
   window.scrollTo(0, 0);
   render();
 }
@@ -541,8 +608,9 @@ document.body.addEventListener("touchend", (e) => {
   if (!swiping) return; swiping = false;
   const dx = e.changedTouches[0].clientX - tsx;
   const dy = e.changedTouches[0].clientY - tsy;
-  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.8) {
-    goToScreen(curScreen + (dx < 0 ? 1 : -1));
+  // RTL: swipe right advances to the next tab, swipe left goes back
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.6) {
+    goToScreen(curScreen + (dx > 0 ? 1 : -1));
   }
 }, { passive: true });
 
@@ -831,10 +899,14 @@ $("#m-next").addEventListener("click", () => { mMonth++; if (mMonth > 11) { mMon
 function renderMonth() {
   $("#m-label").textContent = `${MONTHS[mMonth]} ${mYear}`;
   const m = monthTotals(mYear, mMonth);
+  const rate = m.inc > 0 ? Math.round(m.net / m.inc * 100) : null;
+  const cap = rate === null ? "" : m.net >= 0
+    ? `<div class="cap" style="color:var(--good-text)">${rate}% נחסך</div>`
+    : `<div class="cap" style="color:var(--crit)">גירעון</div>`;
   $("#m-kpis").innerHTML = `
-    <div class="kpi"><div class="v num">${fmt(m.inc)}</div><div class="l">הכנסות</div></div>
-    <div class="kpi"><div class="v num">${fmt(m.out)}</div><div class="l">הוצאות</div></div>
-    <div class="kpi"><div class="v num ${m.net >= 0 ? "pos" : "neg"}">${m.net >= 0 ? "+" : "-"}${fmt(Math.abs(m.net))}</div><div class="l">מאזן</div></div>`;
+    <div class="kpi"><div class="l">הכנסות</div><div class="v num">${fmt(m.inc)}</div></div>
+    <div class="kpi"><div class="l">הוצאות</div><div class="v num">${fmt(m.out)}</div></div>
+    <div class="kpi"><div class="l">מאזן</div><div class="v num ${m.net >= 0 ? "pos" : "neg"}">${m.net >= 0 ? "+" : "-"}${fmt(Math.abs(m.net))}</div>${cap}</div>`;
 
   // monthly budget (reported expenses) + projection for the current month
   const mb = S.settings.monthlyBudget;
