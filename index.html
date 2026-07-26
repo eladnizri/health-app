@@ -66,7 +66,8 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 .num { font-variant-numeric: tabular-nums; }
 
 .screen { display: none; padding: 12px 14px 20px; }
-.screen.active { display: block; }
+.screen.active { display: block; animation: fade .18s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .card { background: var(--surface); border: 1px solid var(--border);
   border-radius: 16px; padding: 14px 16px; margin: 10px 0; }
 .mut { color: var(--muted); font-size: 13px; }
@@ -429,13 +430,36 @@ function pastWeekends(maxN = 26) {
 
 /* ============================= navigation ============================ */
 const $ = (q) => document.querySelector(q);
+const SCREENS = ["report", "weekend", "month", "settings"];
+let curScreen = 0;
+function goToScreen(i) {
+  curScreen = Math.max(0, Math.min(SCREENS.length - 1, i));
+  const name = SCREENS[curScreen];
+  document.querySelectorAll(".tabbar button").forEach((x) => x.classList.toggle("on", x.dataset.s === name));
+  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+  $("#s-" + name).classList.add("active");
+  window.scrollTo(0, 0);
+  render();
+}
 document.getElementById("tabbar").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
-  document.querySelectorAll(".tabbar button").forEach((x) => x.classList.toggle("on", x === b));
-  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
-  $("#s-" + b.dataset.s).classList.add("active");
-  render();
+  goToScreen(SCREENS.indexOf(b.dataset.s));
 });
+
+/* swipe between screens (left = next screen, right = previous) */
+let tsx = 0, tsy = 0, swiping = false;
+document.body.addEventListener("touchstart", (e) => {
+  if (e.touches.length !== 1 || $("#modal-back").classList.contains("show")) { swiping = false; return; }
+  tsx = e.touches[0].clientX; tsy = e.touches[0].clientY; swiping = true;
+}, { passive: true });
+document.body.addEventListener("touchend", (e) => {
+  if (!swiping) return; swiping = false;
+  const dx = e.changedTouches[0].clientX - tsx;
+  const dy = e.changedTouches[0].clientY - tsy;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.8) {
+    goToScreen(curScreen + (dx < 0 ? 1 : -1));
+  }
+}, { passive: true });
 
 /* ============================ report screen ========================== */
 let amountStr = "";
@@ -465,10 +489,15 @@ $("#type-toggle").addEventListener("click", (e) => {
   document.querySelectorAll("#type-toggle button").forEach((x) => x.classList.toggle("on", x === b));
   $("#cats").style.display = txType === "expense" ? "" : "none";
   $("#save-income").style.display = txType === "income" ? "" : "none";
-  $("#report-hint").textContent = txType === "expense"
-    ? "מקלידים סכום → נוגעים בקטגוריה → נשמר"
-    : "מקלידים סכום → שמור הכנסה";
+  updateReportHint();
 });
+function updateReportHint() {
+  const el = $("#report-hint");
+  if (txType === "income") { el.textContent = "מקלידים סכום → שמור הכנסה"; return; }
+  el.textContent = inWeekend(new Date())
+    ? "🌅 סופ\"ש פעיל — ההוצאה תיכנס לתקציב הסופ\"ש"
+    : "📅 יום חול — ההוצאה תיכנס להוצאות החודש";
+}
 
 function renderCats() {
   $("#cats").innerHTML = S.categories.map((c) =>
@@ -497,7 +526,7 @@ function addTx(type, cat) {
     const left = S.settings.weekendBudget - sum(weekendTx(w));
     msg = left >= 0 ? `נשמר ✓ נשארו ${fmt(left)} לסופ"ש`
                     : `נשמר ✓ חריגה של ${fmt(-left)} מתקציב הסופ"ש`;
-  } else msg = `נשמר ✓ ${fmt2(amount)}`;
+  } else msg = `נשמר ✓ ${fmt2(amount)} · נכנס להוצאות החודש`;
   showToast(msg, true);
   render();
 }
@@ -878,7 +907,7 @@ $("#wipe").addEventListener("click", () => {
 
 /* ============================== render all =========================== */
 function render() {
-  renderStatus(); renderCats(); renderAmount();
+  renderStatus(); renderCats(); renderAmount(); updateReportHint();
   renderWeekend(); renderMonth(); renderSettings();
 }
 render();
