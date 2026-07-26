@@ -1,9 +1,1 @@
-__pycache__/
-*.pyc
-.venv/
-venv/
-
-# Local data: database, Garmin session tokens, exports
-data/
-*.db
-*.sqlite3
+.DS_Store
