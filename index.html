@@ -462,6 +462,33 @@ h2 { font-weight: 800; }
   .ring-wrap svg circle:last-child, .btn.primary, .save-income { transition: none; }
 }
 
+/* ---------- monthly recap card ---------- */
+.recap-card { padding: 16px; overflow: hidden; }
+.recap-card .rc-title { font-size: 13px; font-weight: 700; color: var(--ink-2);
+  display: flex; align-items: center; gap: 6px; }
+.recap-card .rc-hero { font-size: 30px; font-weight: 800; letter-spacing: -.8px; margin: 4px 0 1px; }
+.recap-card .rc-hero.pos { color: var(--good-text); }
+.recap-card .rc-hero.neg { color: var(--crit); }
+.recap-card .rc-sub { font-size: 13px; color: var(--muted); font-weight: 600; }
+.recap-card .rc-lines { margin-top: 12px; display: grid; gap: 7px; }
+.rc-line { display: flex; align-items: baseline; gap: 8px; font-size: 13.5px; }
+.rc-line .em { flex: none; }
+.rc-line b { font-weight: 700; }
+
+/* ---------- day-of-week chart labels ---------- */
+#m-dow-chart .vlab { font-size: 11px; font-weight: 600; }
+
+/* ---------- patterns card ---------- */
+.pattern-line { display: flex; align-items: baseline; gap: 8px; padding: 5px 0; font-size: 14px; }
+.pattern-line .em { flex: none; }
+.pattern-line b { font-weight: 700; }
+
+/* ---------- budget-alert pill in the budget strip ---------- */
+.bs-alert { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700;
+  padding: 1px 7px; border-radius: 999px; margin-inline-start: 4px; }
+.bs-alert.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 15%, transparent); }
+.bs-alert.crit { color: var(--crit); background: color-mix(in srgb, var(--crit) 15%, transparent); }
+
 /* ---------- compact report layout for short phones (e.g. iPhone SE) ----------
    Keeps the whole entry flow — amount, quick amounts, categories, keypad —
    above the tab bar without scrolling on shorter viewports. */
@@ -537,13 +564,19 @@ h2 { font-weight: 800; }
   </div>
   <div class="kpis" id="m-kpis"></div>
   <div id="m-compare"></div>
+  <div id="m-recap"></div>
   <div class="card" id="m-travel"></div>
   <div class="card" id="m-budget"></div>
   <div class="card" id="m-weekend-share"></div>
+  <div class="card" id="m-dow">
+    <h3 style="font-size:15px">הוצאות לפי יום בשבוע</h3>
+    <div id="m-dow-chart"></div>
+  </div>
   <div class="card">
     <h3 style="font-size:15px">מגמה חודשית</h3>
     <div id="m-chart"></div>
   </div>
+  <div id="m-patterns"></div>
   <div class="card">
     <h3 style="font-size:15px">לאן הלך הכסף</h3>
     <div id="m-cats"></div>
@@ -652,6 +685,7 @@ h2 { font-weight: 800; }
 /* =============================== state =============================== */
 const LS_KEY = "shekel-track-v1";
 const DAY_NAMES = ["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+const DAY_SHORT = ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
 const CAT_COLORS = ["var(--c1)","var(--c2)","var(--c3)","var(--c4)","var(--c5)","var(--c6)"];
 
 const DEFAULTS = () => ({
@@ -969,6 +1003,18 @@ $("#cats").addEventListener("click", (e) => {
 });
 $("#save-income").addEventListener("click", () => addTx("income", null));
 
+/* Smart budget alert: highest of 70/90/100% newly crossed by this expense. */
+function budgetThresholdCrossed(before, after, budget) {
+  if (budget <= 0) return 0;
+  for (const p of [1, 0.9, 0.7]) if (before < budget * p && after >= budget * p) return p;
+  return 0;
+}
+function maybeNotify(title, body) {
+  if (S.settings.reminders && "Notification" in window && Notification.permission === "granted") {
+    try { new Notification(title, { body }); } catch {}
+  }
+}
+
 let lastAddedId = null, toastTimer = null;
 function addTx(type, cat) {
   const amount = parseFloat(amountStr);
@@ -980,19 +1026,39 @@ function addTx(type, cat) {
   S.tx.push(t); save();
   lastAddedId = t.id;
   amountStr = ""; $("#note-input").value = ""; renderAmount();
-  let msg;
+  let msg, alertMsg = "";
   if (type === "income") msg = `נשמרה הכנסה של ${fmt2(amount)} ✓`;
   else if (t.bucket === "travel" && trip) {
-    const left = trip.budget - tripSpent(trip.id);
+    const budget = trip.budget, after = tripSpent(trip.id), before = after - amount, left = budget - after;
     msg = left >= 0 ? `נשמר ✓ נשארו ${fmt(left)} לטיול`
                     : `נשמר ✓ חריגה של ${fmt(-left)} מתקציב הטיול`;
+    const cr = budgetThresholdCrossed(before, after, budget);
+    if (cr === 0.7) alertMsg = `🟡 עברת 70% מתקציב הטיול`;
+    else if (cr === 0.9) alertMsg = `⚠️ עברת 90% מתקציב הטיול`;
+    if (cr >= 0.9) maybeNotify(`טיול · ${trip.name}`, left >= 0 ? `נשארו ${fmt(left)} מהתקציב` : `חריגה של ${fmt(-left)}`);
   } else if (t.bucket === "weekend") {
-    const left = S.settings.weekendBudget - sum(weekendTx(weekendOf(t.ts)));
+    const w = weekendOf(t.ts), budget = S.settings.weekendBudget;
+    const after = sum(weekendTx(w)), before = after - amount, left = budget - after;
     msg = left >= 0 ? `נשמר ✓ נשארו ${fmt(left)} לסופ"ש`
                     : `נשמר ✓ חריגה של ${fmt(-left)} מתקציב הסופ"ש`;
-  } else if (t.bucket === "other") msg = `נשמר ✓ ${fmt2(amount)} · הוצאת "אחר"`;
-  else msg = `נשמר ✓ ${fmt2(amount)} · נכנס להוצאות החודש`;
-  showToast(msg, true);
+    const cr = budgetThresholdCrossed(before, after, budget);
+    if (cr === 0.7) alertMsg = `🟡 עברת 70% מתקציב הסופ"ש`;
+    else if (cr === 0.9) alertMsg = `⚠️ עברת 90% מתקציב הסופ"ש`;
+    if (cr >= 0.9) maybeNotify('תקציב סופ"ש', left >= 0 ? `נשארו ${fmt(left)} מהתקציב` : `חריגה של ${fmt(-left)}`);
+  } else if (t.bucket === "other") {
+    msg = `נשמר ✓ ${fmt2(amount)} · הוצאת "אחר"`;
+  } else {
+    msg = `נשמר ✓ ${fmt2(amount)} · נכנס להוצאות החודש`;
+    const now = new Date(), mb = S.settings.monthlyBudget;
+    if (mb > 0) {
+      const after = monthTotals(now.getFullYear(), now.getMonth()).reportedOut, before = after - amount;
+      const cr = budgetThresholdCrossed(before, after, mb), left = mb - after;
+      if (cr === 0.7) alertMsg = `🟡 עברת 70% מהתקציב החודשי`;
+      else if (cr === 0.9) alertMsg = `⚠️ עברת 90% מהתקציב החודשי`;
+      if (cr >= 0.9) maybeNotify("תקציב חודשי", left >= 0 ? `נשארו ${fmt(left)} מהתקציב` : `חריגה של ${fmt(-left)}`);
+    }
+  }
+  showToast(alertMsg || msg, true);
   render();
 }
 function showToast(msg, withUndo) {
@@ -1136,6 +1202,25 @@ function renderWeekend() {
     const savings = Math.round((1 - bestWeekend.total / avg) * 100);
     if (savings > 5) {
       lines.push(["💡", `הסופ"ש הכי חסכוני שלך היה ב-${savings}% מהממוצע — אתה יכול!`]);
+    }
+
+    // ---- lessons & tips ----
+    // in-budget streak (most recent consecutive within-budget weekends)
+    let streak = 0;
+    for (const x of withData) { if (x.total <= budget) streak++; else break; }
+    if (streak >= 2) lines.push(["🔥", `${streak} סופ"שים ברצף בתוך התקציב — כל הכבוד!`]);
+    // dominant-category lesson
+    const catTotal = Object.values(catSums).reduce((a, b) => a + b, 0);
+    if (top && catTotal > 0) {
+      const share = Math.round(top[1] / catTotal * 100);
+      if (share >= 35) lines.push(["🎓", `טיפ: ${catById(top[0]).name} תופס ${share}% מהוצאות הסופ"ש — יעד טוב לחיסכון`]);
+    }
+    // night-spending lesson
+    const allWkTx = [...withData.flatMap((x) => x.txs), ...txs];
+    const nightWk = allWkTx.filter((t) => isNight(t.ts)).reduce((a, t) => a + t.amount, 0);
+    const allWkSum = allWkTx.reduce((a, t) => a + t.amount, 0);
+    if (allWkSum > 0 && nightWk / allWkSum >= 0.15) {
+      lines.push(["🌙", `כ-${Math.round(nightWk / allWkSum * 100)}% מהוצאות הסופ"ש בלילה — לרוב פחות מתוכננות`]);
     }
 
     box.innerHTML = `<h3 style="font-size:15px;margin-bottom:4px">תובנות</h3>` +
@@ -1283,6 +1368,21 @@ function renderMonth() {
   }
   $("#m-chart").innerHTML = vbars(trend, mb > 0 ? mb : 0);
 
+  // spending by day of week (reported expenses) — reads Sun→Sat right-to-left
+  const dow = [0, 0, 0, 0, 0, 0, 0];
+  m.reportedExp.forEach((t) => { dow[new Date(t.ts).getDay()] += t.amount; });
+  if (m.reportedExp.length) {
+    const dowItems = [6, 5, 4, 3, 2, 1, 0].map((i) => ({ label: DAY_SHORT[i], value: Math.round(dow[i]), over: false }));
+    $("#m-dow-chart").innerHTML = vbars(dowItems, 0);
+    $("#m-dow").style.display = "";
+  } else {
+    $("#m-dow").style.display = "none";
+  }
+
+  // monthly recap (narrative) + spending patterns (stats)
+  renderRecap(m, prev, py, pm);
+  renderPatterns(m, dow, isThisMonth);
+
   // categories (excludes travel — trips get their own budget breakdown)
   const catSums = {};
   m.reportedExp.forEach((t) => {
@@ -1429,6 +1529,88 @@ function renderMonthTx() {
     ? `<div class="filter-count">${list.length} תנועות · סה"כ ${fmt(sum(list.map((t) => ({ amount: t.type === "income" ? 0 : t.amount }))))}</div>`
     : "";
   el.innerHTML = head + list.map(txItem).join("");
+}
+
+/* ---------- monthly recap: a short narrative summary of the month ---------- */
+function renderRecap(m, prev, py, pm) {
+  const el = $("#m-recap");
+  const exp = m.reportedExp;
+  if (!m.txs.length && !m.fixedIn && !m.fixedOut) { el.innerHTML = ""; el.style.display = "none"; return; }
+  const net = m.net;
+  const rate = m.inc > 0 ? Math.round(net / m.inc * 100) : null;
+  const heroTxt = net >= 0 ? `+${fmt(net)}` : `-${fmt(-net)}`;
+  const heroSub = net >= 0
+    ? (rate !== null ? `${rate}% מההכנסה נחסך החודש` : "נחסך החודש")
+    : "גירעון החודש";
+  const lines = [];
+  // verdict vs previous month (reported expenses)
+  if (prev.reportedOut > 0 && m.reportedOut > 0) {
+    const d = Math.round((m.reportedOut / prev.reportedOut - 1) * 100);
+    if (Math.abs(d) < 3) lines.push(["➖", `הוצאת בערך כמו ב${MONTHS[pm]}`]);
+    else if (d < 0) lines.push(["🎉", `החודש היה <b>${Math.abs(d)}% יותר כלכלי</b> מ${MONTHS[pm]}`]);
+    else lines.push(["📈", `הוצאת <b>${d}% יותר</b> מ${MONTHS[pm]}`]);
+  }
+  if (exp.length) {
+    // busiest category
+    const catSums = {};
+    exp.forEach((t) => { catSums[t.cat || "other"] = (catSums[t.cat || "other"] || 0) + t.amount; });
+    const top = Object.entries(catSums).sort((a, b) => b[1] - a[1])[0];
+    const c = catById(top[0]);
+    lines.push([c.emoji, `הכי הרבה על <b>${esc(c.name)}</b> — ${fmt(top[1])}`]);
+    // activity across active days
+    const days = new Set(exp.map((t) => new Date(t.ts).toISOString().slice(0, 10))).size;
+    lines.push(["🧾", `${exp.length} הוצאות ב-${days} ימים פעילים`]);
+    // biggest single expense
+    const big = exp.reduce((a, b) => a.amount > b.amount ? a : b);
+    lines.push(["💥", `ההוצאה הגדולה: <b>${fmt(big.amount)}</b> · ${esc(catById(big.cat).name)}`]);
+  }
+  el.innerHTML = `<div class="card recap-card">
+    <div class="rc-title">🎊 סיכום ${MONTHS[mMonth]}</div>
+    <div class="rc-hero ${net >= 0 ? "pos" : "neg"} num">${heroTxt}</div>
+    <div class="rc-sub">${heroSub}</div>
+    <div class="rc-lines">${lines.map(([em, t]) => `<div class="rc-line"><span class="em">${em}</span><span>${t}</span></div>`).join("")}</div>
+  </div>`;
+  el.style.display = "";
+}
+
+/* ---------- spending patterns: analytical stats for the month ---------- */
+function renderPatterns(m, dow, isThisMonth) {
+  const el = $("#m-patterns");
+  const exp = m.reportedExp;
+  if (!exp.length) { el.innerHTML = ""; el.style.display = "none"; return; }
+  const lines = [];
+  // average daily spend (elapsed days for the current month, full month otherwise)
+  const dim = new Date(mYear, mMonth + 1, 0).getDate();
+  const days = isThisMonth ? new Date().getDate() : dim;
+  lines.push(["📆", `הוצאה יומית ממוצעת: <b>${fmt(m.reportedOut / days)}</b>`]);
+  // most expensive weekday
+  const maxV = Math.max(...dow);
+  if (maxV > 0) lines.push(["📊", `היום ה"יקר" ביותר: <b>${DAY_NAMES[dow.indexOf(maxV)]}</b> (${fmt(maxV)})`]);
+  // average per transaction
+  lines.push(["🧮", `הוצאה ממוצעת לתנועה: <b>${fmt(m.reportedOut / exp.length)}</b> (${exp.length} תנועות)`]);
+  // comparison to trailing average (previous months with data)
+  const trailing = [];
+  for (let i = 1; i <= 6; i++) {
+    let yy = mYear, mm = mMonth - i; while (mm < 0) { mm += 12; yy--; }
+    const v = monthTotals(yy, mm).reportedOut; if (v > 0) trailing.push(v);
+  }
+  if (trailing.length >= 2) {
+    const avg = trailing.reduce((a, b) => a + b, 0) / trailing.length;
+    const d = Math.round((m.reportedOut / avg - 1) * 100);
+    if (Math.abs(d) >= 5) lines.push([d > 0 ? "🔺" : "🔻", `${d > 0 ? "מעל" : "מתחת"} הממוצע האחרון ב-<b>${Math.abs(d)}%</b> (${fmt(avg)})`]);
+    else lines.push(["⚖️", `קרוב לממוצע החודשים האחרונים (${fmt(avg)})`]);
+  }
+  // night spending share
+  const nightSum = exp.filter((t) => isNight(t.ts)).reduce((a, t) => a + t.amount, 0);
+  if (nightSum > 0) {
+    const pct = Math.round(nightSum / m.reportedOut * 100);
+    if (pct >= 10) lines.push(["🌙", `${pct}% מההוצאות היו בלילה (22:00–06:00)`]);
+  }
+  el.innerHTML = `<div class="card">
+    <h3 style="font-size:15px">💡 דפוסים ותובנות</h3>
+    ${lines.map(([em, t]) => `<div class="pattern-line"><span class="em">${em}</span><span>${t}</span></div>`).join("")}
+  </div>`;
+  el.style.display = "";
 }
 
 /* ======================== edit modals (tx/fixed/cat) ================= */
