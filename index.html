@@ -1144,7 +1144,7 @@ function renderWeekend() {
 
   // history
   $("#wk-history").innerHTML = hist.length ? hist.map((x) => `
-    <div class="card wk-card">
+    <div class="card wk-card" data-weekend="${x.id}" style="cursor:pointer">
       <div class="wk-head">
         <span class="wk-title">${rangeLabel(x)}</span>
         <span class="num" style="font-weight:800">${fmt(x.total)}</span>
@@ -1437,6 +1437,8 @@ document.body.addEventListener("click", (e) => {
   if (txEl) { openTxModal(txEl.dataset.tx); return; }
   const fxEl = e.target.closest("[data-fixed]");
   if (fxEl) { openFixedModal(fxEl.dataset.fixed); return; }
+  const wkEl = e.target.closest("[data-weekend]");
+  if (wkEl) { openWeekendDetailsModal(wkEl.dataset.weekend); return; }
 });
 function modal(html) { $("#modal").innerHTML = html; $("#modal-back").classList.add("show"); }
 function closeModal() { $("#modal-back").classList.remove("show"); }
@@ -1504,6 +1506,42 @@ function openFixedModal(id) {
   $("#f-cancel").onclick = closeModal;
 }
 $("#fixed-add").addEventListener("click", () => openFixedModal(null));
+
+function openWeekendDetailsModal(weekendId) {
+  const allWeekends = pastWeekends(52);
+  const weekend = allWeekends.find((w) => w.id === weekendId);
+  if (!weekend) return;
+  const rangeLabel = (win) =>
+    `${win.start.getDate()}.${win.start.getMonth() + 1} - ${new Date(win.end - 1).getDate()}.${new Date(win.end - 1).getMonth() + 1}`;
+  const budget = S.settings.weekendBudget;
+  const txList = (weekend.txs || []).sort((a, b) => b.ts.localeCompare(a.ts)).map(txItem).join("");
+  const catSums = {};
+  (weekend.txs || []).forEach((t) => {
+    catSums[t.cat || "other"] = (catSums[t.cat || "other"] || 0) + t.amount;
+  });
+  const topCats = Object.entries(catSums).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  modal(`
+    <h3>פירוט סופ"ש ${rangeLabel(weekend)}</h3>
+    <div class="kpis" style="margin-bottom:10px">
+      <div class="kpi"><div class="l">סה"כ הוצאה</div><div class="v num">${fmt(weekend.total)}</div></div>
+      <div class="kpi"><div class="l">תקציב</div><div class="v num" style="color:var(--muted)">${fmt(budget)}</div></div>
+      <div class="kpi"><div class="l">יתרה</div><div class="v num ${weekend.total <= budget ? "pos" : "neg"}">${weekend.total <= budget ? fmt(budget - weekend.total) : "-" + fmt(weekend.total - budget)}</div></div>
+    </div>
+    ${topCats.length ? `<div style="margin-bottom:10px"><h4 style="font-size:13px;color:var(--muted);margin:0 0 6px">קטגוריות עליונות</h4>
+      ${topCats.map(([cat, amt]) => {
+        const c = catById(cat);
+        const pct = Math.round(amt / weekend.total * 100);
+        return `<div class="bar-row"><span class="bar-label">${c.emoji} ${esc(c.name)}</span><span class="bar-track" style="background:${catColor(cat)};opacity:0.2"><div class="bar-fill" style="width:${pct}%;background:${catColor(cat)}"></div></span><span class="bar-amt">${fmt(amt)}</span></div>`;
+      }).join("")}
+    </div>` : ""}
+    <div style="margin-bottom:10px"><h4 style="font-size:13px;color:var(--muted);margin:0 0 6px">הוצאות</h4>
+      ${txList ? txList : `<div class="empty">אין הוצאות</div>`}
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="wk-close">סגירה</button>
+    </div>`);
+  $("#wk-close").onclick = closeModal;
+}
 
 /* ============================== settings ============================= */
 function renderSettings() {
