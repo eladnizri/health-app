@@ -437,8 +437,11 @@ h2 { font-weight: 800; }
 .tabbar { background: color-mix(in srgb, var(--surface) 82%, transparent);
   backdrop-filter: saturate(1.5) blur(14px); -webkit-backdrop-filter: saturate(1.5) blur(14px);
   box-shadow: 0 -1px 0 var(--border), 0 -10px 30px -12px rgba(16,24,40,.12); }
-.tabbar button.on::before { background: var(--grad-accent); width: 24px; height: 3px;
-  box-shadow: 0 1px 6px -1px color-mix(in srgb, var(--accent) 70%, transparent); }
+.tabbar button.on::before { display: none; } /* replaced by the sliding indicator */
+.tab-ind { position: absolute; top: 0; left: 0; width: 24px; height: 3px; border-radius: 0 0 3px 3px;
+  background: var(--grad-accent); box-shadow: 0 1px 6px -1px color-mix(in srgb, var(--accent) 70%, transparent);
+  transition: transform .28s cubic-bezier(.4, 0, .2, 1); pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .tab-ind { transition: none; } }
 
 /* badges & chips: softer surfaces */
 .badge { border-color: color-mix(in srgb, var(--border) 80%, transparent);
@@ -552,6 +555,21 @@ h2 { font-weight: 800; }
 .cat-total { padding-top: 9px; margin-top: 5px; border-top: 1px solid var(--grid); }
 .tag-sub { font-size: 10px; font-weight: 700; color: var(--accent); white-space: nowrap;
   background: color-mix(in srgb, var(--accent) 12%, transparent); padding: 1px 6px; border-radius: 999px; }
+
+/* ---------- modal drag handle + swipe-down-to-close ---------- */
+.modal { position: relative; }
+.modal::before { content: ""; display: block; width: 38px; height: 4px; border-radius: 999px;
+  background: var(--baseline); opacity: .6; margin: -6px auto 12px; }
+.modal.closing { animation: sheet-down .2s ease forwards; }
+@keyframes sheet-down { to { transform: translateY(100%); opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { .modal.closing { animation: none; } }
+
+/* ---------- friendlier empty states ---------- */
+.empty .empty-emo { display: block; font-size: 30px; margin-bottom: 6px; opacity: .75; }
+
+/* ---------- consistent category colour dots ---------- */
+.cat-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  margin-inline-end: 6px; flex: none; vertical-align: middle; }
 
 /* ---------- compact report layout for short phones (e.g. iPhone SE) ----------
    Keeps the whole entry flow — amount, quick amounts, categories, keypad —
@@ -769,6 +787,7 @@ h2 { font-weight: 800; }
 
 <!-- tab bar -->
 <nav class="tabbar" id="tabbar">
+  <span class="tab-ind" id="tab-ind"></span>
   <button data-s="report" class="on"><span class="ic">💸</span>דיווח</button>
   <button data-s="weekend"><span class="ic">🌅</span>סופ"ש</button>
   <button data-s="month"><span class="ic">📅</span>חודש</button>
@@ -828,6 +847,10 @@ function load() {
 }
 function save() { localStorage.setItem(LS_KEY, JSON.stringify(S)); }
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+/* subtle haptic feedback where supported (no-op on browsers/devices without it) */
+const haptic = (p = 8) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch {} };
+/* friendlier empty state: an emoji over a short guiding line */
+const emptyState = (emo, txt) => `<div class="empty"><span class="empty-emo">${emo}</span>${txt}</div>`;
 
 /* ============================ money & time =========================== */
 const fmt = (n) => "₪" + Math.round(n).toLocaleString("he-IL");
@@ -938,8 +961,17 @@ function goToScreen(i) {
   if (dir) el.classList.add(dir > 0 ? "from-next" : "from-prev");
   window.scrollTo(0, 0);
   render();
+  positionTabInd();
   if (name === "month") animateMonthNumbers();
 }
+/* slide the tab-bar indicator under the active button */
+function positionTabInd() {
+  const ind = $("#tab-ind"); if (!ind) return;
+  const btn = document.querySelector(`.tabbar button[data-s="${SCREENS[curScreen]}"]`); if (!btn) return;
+  const x = btn.offsetLeft + btn.offsetWidth / 2 - ind.offsetWidth / 2;
+  ind.style.transform = `translateX(${x}px)`;
+}
+window.addEventListener("resize", positionTabInd);
 /* gentle count-up on the month's headline numbers when the screen is opened/navigated */
 function animateMonthNumbers() {
   if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -1196,13 +1228,14 @@ function addTx(type, cat) {
       if (cr >= 0.9) maybeNotify("תקציב חודשי", left >= 0 ? `נשארו ${fmt(left)} מהתקציב` : `חריגה של ${fmt(-left)}`);
     }
   }
+  haptic(alertMsg ? [12, 50, 12] : 8); // a stronger buzz when a budget threshold is crossed
   showToast(alertMsg || msg, () => { S.tx = S.tx.filter((x) => x.id !== t.id); save(); render(); });
   render();
 }
 /* delete a transaction with an undo affordance (used by swipe-to-delete) */
 function deleteTxWithUndo(id) {
   const idx = S.tx.findIndex((t) => t.id === id); if (idx < 0) return;
-  const [removed] = S.tx.splice(idx, 1); save(); render();
+  const [removed] = S.tx.splice(idx, 1); save(); render(); haptic(12);
   showToast("נמחק ✓", () => { S.tx.push(removed); save(); render(); });
 }
 /* showToast(msg, undo): undo may be a function (runs on tap) or true/false */
@@ -1278,7 +1311,7 @@ function renderWeekend() {
         <span class="badge ${spent <= budget ? "ok" : "over"}">${spent <= budget ? "✓ בתקציב" : "✗ חריגה"}</span>
       </div>
     </div>
-    ${txs.length ? txs.map(txItem).join("") : `<div class="empty">עוד אין הוצאות בסופ"ש הזה</div>`}`;
+    ${txs.length ? txs.map(txItem).join("") : emptyState("🌅", "עוד אין הוצאות בסופ\"ש הזה — כשתדווח, הן יופיעו כאן")}`;
 
   // trend chart: last weekends, oldest -> newest, ending with the current one
   const chartWins = [];
@@ -1376,7 +1409,7 @@ function renderWeekend() {
       </div>
       <div class="meter"><div style="width:${Math.min(100, budget ? x.total / budget * 100 : 0)}%;background:${x.total > budget ? "var(--crit)" : "var(--good)"}"></div></div>
       <span class="badge ${x.total <= budget ? "ok" : "over"}">${x.total <= budget ? "✓ בתקציב" : `✗ חריגה של ${fmt(x.total - budget)}`}</span>
-    </div>`).join("") : `<div class="empty">עדיין אין היסטוריה</div>`;
+    </div>`).join("") : emptyState("📭", "עדיין אין היסטוריית סופ\"שים");
 }
 
 /* "night" spending: 22:00–05:59 — often impulsive/unplanned, worth flagging */
@@ -1471,23 +1504,32 @@ function renderMonth() {
     cmp.style.display = "none";
   }
 
-  // monthly budget (reported expenses) + projection for the current month
+  // monthly budget (reported expenses) — live ring + projection for the current month
   const mb = S.settings.monthlyBudget;
   if (mb > 0) {
     const left = mb - m.reportedOut;
-    const color = left < 0 ? "var(--crit)" : (Math.max(0, left) / mb) < 0.2 ? "var(--warn)" : "var(--good)";
+    const frac = Math.max(0, left) / mb;
+    const color = left < 0 ? "var(--crit)" : frac < 0.2 ? "var(--warn)" : "var(--good)";
     let proj = "";
     if (isThisMonth) {
       const dim = new Date(mYear, mMonth + 1, 0).getDate();
       const dnow = new Date().getDate();
       const projected = Math.round(m.reportedOut / dnow * dim);
-      proj = `<div class="mut num" style="margin-top:6px">בקצב הזה: כ-${fmt(projected)} עד סוף החודש${projected > mb ? " ⚠️ מעל התקציב" : ""}</div>`;
+      proj = `<div class="mut num" style="margin-top:4px">בקצב הזה: כ-${fmt(projected)} עד סוף החודש${projected > mb ? " ⚠️ מעל התקציב" : ""}</div>`;
     }
     $("#m-budget").innerHTML = `
-      <div class="row spread"><span class="sub">🎯 תקציב חודשי (מדווחות)</span>
-        <span class="num" style="font-weight:800;color:${color}">${left >= 0 ? "נשארו " + fmt(left) : "חריגה " + fmt(-left)}</span></div>
-      <div class="meter" style="margin:8px 0 0"><div style="width:${Math.min(100, m.reportedOut / mb * 100)}%;background:${color}"></div></div>
-      <div class="mut num" style="margin-top:4px">${fmt(m.reportedOut)} מתוך ${fmt(mb)}</div>${proj}`;
+      <div class="status-card">
+        <div class="ring-wrap">${ringSvg(frac, color)}
+          <div class="ring-val"><span class="amt num" style="color:${color}">${fmt(Math.abs(left))}</span>
+          <span class="lbl">${left >= 0 ? "נשארו" : "חריגה"}</span></div>
+        </div>
+        <div class="status-main">
+          <div class="status-title">🎯 תקציב חודשי</div>
+          <div class="sub num" style="margin-top:4px">${fmt(m.reportedOut)} מתוך ${fmt(mb)}</div>
+          <span class="badge ${left >= 0 ? "ok" : "over"}">${left >= 0 ? "✓ בתקציב" : "✗ חריגה"}</span>
+          ${proj}
+        </div>
+      </div>`;
     $("#m-budget").style.display = "";
   } else {
     $("#m-budget").style.display = "none";
@@ -1531,7 +1573,7 @@ function renderMonth() {
       <span class="tx-main"><div class="tx-name">${esc(f.name)}</div>
       <div class="tx-time">${f.type === "income" ? "הכנסה קבועה" : "הוצאה קבועה"}</div></span>
       <span class="tx-amt num ${f.type === "income" ? "in" : ""}">${f.type === "income" ? "+" : "-"}${fmt2(f.amount)}</span>
-    </div>`).join("") : `<div class="empty">אין קבועות עדיין - הוסף משכורת, שכ"ד, מנויים</div>`;
+    </div>`).join("") : emptyState("🔁", "אין קבועות עדיין — הוסף משכורת, שכ\"ד, מנויים");
 
   // month tx list (with search + filter)
   renderMonthTx();
@@ -1562,11 +1604,11 @@ function renderCatsBreakdown() {
         const c = catById(id), pct = total ? Math.round(v / total * 100) : 0;
         const sub = all ? `${pct}% · ${fmt(v / span)}/ח׳` : `${pct}%`;
         return `<div class="bar-row cat-row" data-catrow="${id}">
-          <span class="bar-label">${c.emoji} ${esc(c.name)}</span>
+          <span class="bar-label"><span class="cat-dot" style="background:${catColor(id)}"></span>${c.emoji} ${esc(c.name)}</span>
           <span class="bar-track"><span class="bar-fill" style="width:${max ? v / max * 100 : 0}%;background:${catColor(id)}"></span></span>
           <span class="bar-amt num">${fmt(v)}<span class="bar-pct">${sub}</span></span></div>`;
       }).join("") + `<div class="row spread cat-total"><span class="mut">סה"כ${all ? ` · ${span} חודשים` : ""}</span><span class="num" style="font-weight:800">${fmt(total)}</span></div>`
-    : `<div class="empty">אין הוצאות ${all ? "עדיין" : "מדווחות החודש"}</div>`;
+    : emptyState("📊", all ? "עדיין אין הוצאות לניתוח" : "אין הוצאות מדווחות החודש");
 }
 $("#cats-scope").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
@@ -1694,8 +1736,8 @@ function renderMonthTx() {
   });
   const el = $("#m-tx");
   $("#tx-meta").textContent = m.txs.length ? `${m.txs.length}` : "";
-  if (!m.txs.length) { el.innerHTML = `<div class="empty">אין תנועות החודש</div>`; return; }
-  if (!list.length) { el.innerHTML = `<div class="empty">לא נמצאו תנועות תואמות</div>`; return; }
+  if (!m.txs.length) { el.innerHTML = emptyState("🧾", "עוד אין תנועות החודש"); return; }
+  if (!list.length) { el.innerHTML = emptyState("🔍", "לא נמצאו תנועות תואמות"); return; }
   const filtered = q || txFilter !== "all";
   const head = filtered
     ? `<div class="filter-count">${list.length} תנועות · סה"כ ${fmt(sum(list.map((t) => ({ amount: t.type === "income" ? 0 : t.amount }))))}</div>`
@@ -1860,9 +1902,42 @@ document.body.addEventListener("click", (e) => {
   document.body.addEventListener("touchend", finish, { passive: true });
   document.body.addEventListener("touchcancel", finish, { passive: true });
 })();
-function modal(html) { $("#modal").innerHTML = html; $("#modal-back").classList.add("show"); }
-function closeModal() { $("#modal-back").classList.remove("show"); }
+function modal(html) {
+  const m = $("#modal");
+  m.classList.remove("closing"); m.style.transform = ""; m.scrollTop = 0;
+  m.innerHTML = html; $("#modal-back").classList.add("show");
+}
+function closeModal() {
+  const m = $("#modal"), back = $("#modal-back");
+  if (!back.classList.contains("show")) return;
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) { back.classList.remove("show"); m.style.transform = ""; return; }
+  m.classList.add("closing");
+  setTimeout(() => { back.classList.remove("show"); m.classList.remove("closing"); m.style.transform = ""; }, 190);
+}
 $("#modal-back").addEventListener("click", (e) => { if (e.target.id === "modal-back") closeModal(); });
+/* drag the sheet down from its top (the handle area) to dismiss */
+(function () {
+  let sy = 0, dragging = false;
+  const back = $("#modal-back");
+  back.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) { dragging = false; return; }
+    const m = $("#modal"), rect = m.getBoundingClientRect(), y = e.touches[0].clientY;
+    if (y - rect.top > 56 || m.scrollTop > 0) { dragging = false; return; }
+    sy = y; dragging = true; m.style.transition = "none";
+  }, { passive: true });
+  back.addEventListener("touchmove", (e) => {
+    if (!dragging) return;
+    const m = $("#modal"), dy = e.touches[0].clientY - sy;
+    m.style.transform = dy > 0 ? `translateY(${dy}px)` : "";
+  }, { passive: true });
+  back.addEventListener("touchend", (e) => {
+    if (!dragging) return; dragging = false;
+    const m = $("#modal"), dy = e.changedTouches[0].clientY - sy;
+    m.style.transition = "";
+    if (dy > 90) closeModal(); else m.style.transform = "";
+  }, { passive: true });
+})();
 
 function openTxModal(id) {
   const t = S.tx.find((x) => x.id === id); if (!t) return;
@@ -1979,7 +2054,7 @@ function renderSettings() {
   $("#cat-list").innerHTML = S.categories.map((c) => `
     <div class="tx-item">
       <span class="tx-emoji">${c.emoji}</span>
-      <span class="tx-main"><div class="tx-name">${esc(c.name)}</div></span>
+      <span class="tx-main"><div class="tx-name"><span class="cat-dot" style="background:${catColor(c.id)}"></span>${esc(c.name)}</div></span>
       <button class="btn danger" data-delcat="${c.id}">הסרה</button>
     </div>`).join("");
   // reminders switch state + note
@@ -2428,6 +2503,7 @@ updateRepeatButton();
 applyShakamRule(); // route כוורת / חלביה / מכונות אוטומטיות to the שק״ם category
 save(); // persist any one-time data migrations (e.g. retired "other" bucket) so backups stay clean
 render();
+requestAnimationFrame(positionTabInd); // place the sliding tab indicator once layout is ready
 
 // fire reminders on open and whenever the app returns to the foreground
 setTimeout(checkReminders, 1200);
