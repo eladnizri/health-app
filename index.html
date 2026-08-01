@@ -489,6 +489,51 @@ h2 { font-weight: 800; }
 .bs-alert.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 15%, transparent); }
 .bs-alert.crit { color: var(--crit); background: color-mix(in srgb, var(--crit) 15%, transparent); }
 
+/* ---------- collapsible sections (clean surface, sharp depth on tap) ---------- */
+.collapse { background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 97%, #fff), var(--surface));
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); border-radius: var(--radius);
+  box-shadow: var(--shadow); margin: 10px 0; overflow: hidden; }
+@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .collapse {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, #fff 3%), var(--surface)); } }
+.collapse-head { width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; font-weight: 700; font-size: 14px; letter-spacing: -.2px; text-align: start; }
+.collapse-head .ch-title { position: relative; padding-inline-start: 11px; }
+.collapse-head .ch-title::before { content: ""; position: absolute; inset-inline-start: 0; top: 1px;
+  width: 3.5px; height: 15px; border-radius: 2px; background: var(--grad-accent);
+  box-shadow: 0 0 8px -1px color-mix(in srgb, var(--accent) 60%, transparent); }
+.collapse-head .ch-meta { color: var(--muted); font-size: 12px; font-weight: 600; }
+.collapse-head .chev { margin-inline-start: auto; color: var(--muted); font-size: 20px; line-height: 1;
+  transition: transform .22s ease; }
+.collapse.open .collapse-head .chev { transform: rotate(180deg); }
+.collapse-body { display: none; padding: 0 16px 14px; }
+.collapse.open .collapse-body { display: block; animation: collapse-in .22s ease; }
+@keyframes collapse-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .collapse.open .collapse-body { animation: none; } .collapse-head .chev { transition: none; } }
+.sub-h { font-size: 12.5px; font-weight: 700; color: var(--ink-2); letter-spacing: -.1px; margin: 14px 0 6px; }
+.sub-h:first-child { margin-top: 2px; }
+#m-patterns .pattern-line:first-child { padding-top: 2px; }
+
+/* ---------- yearly heatmap ---------- */
+.heatmap { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
+.heatmap::-webkit-scrollbar { display: none; }
+.hm-grid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 11px);
+  gap: 3px; direction: ltr; width: max-content; }
+.hm-cell { width: 11px; height: 11px; border-radius: 2.5px; background: var(--ring-track); }
+.hm-cell.l1 { background: color-mix(in srgb, var(--accent) 28%, var(--ring-track)); }
+.hm-cell.l2 { background: color-mix(in srgb, var(--accent) 52%, transparent); }
+.hm-cell.l3 { background: color-mix(in srgb, var(--accent) 76%, transparent); }
+.hm-cell.l4 { background: var(--accent); }
+.hm-legend { display: flex; align-items: center; gap: 4px; justify-content: flex-end;
+  margin-top: 6px; font-size: 10.5px; color: var(--muted); direction: ltr; }
+.hm-legend .hm-cell { width: 10px; height: 10px; }
+
+/* ---------- swipe-to-delete on transaction rows ---------- */
+.tx-item[data-tx] { position: relative; touch-action: pan-y; }
+.tx-item[data-tx].swiping { will-change: transform; }
+.tx-item[data-tx].will-delete { background: color-mix(in srgb, var(--crit) 14%, transparent); }
+.tx-item[data-tx].will-delete::after { content: "🗑 מחיקה"; position: absolute; inset-inline-end: 12px;
+  top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 700; color: var(--crit); }
+
 /* ---------- compact report layout for short phones (e.g. iPhone SE) ----------
    Keeps the whole entry flow — amount, quick amounts, categories, keypad —
    above the tab bar without scrolling on shorter viewports. */
@@ -521,7 +566,6 @@ h2 { font-weight: 800; }
   <div class="seg bucket-seg" id="bucket-toggle">
     <button data-bucket="base">כללי</button>
     <button data-bucket="weekend">סופ"ש</button>
-    <button data-bucket="other">אחר</button>
     <button data-bucket="travel" id="bucket-travel" style="display:none">✈️ טיול</button>
   </div>
   <div class="amount-display zero" id="amount-display"><span class="cur">₪</span>0</div>
@@ -568,42 +612,69 @@ h2 { font-weight: 800; }
   <div class="card" id="m-travel"></div>
   <div class="card" id="m-budget"></div>
   <div class="card" id="m-weekend-share"></div>
-  <div class="card" id="m-dow">
-    <h3 style="font-size:15px">הוצאות לפי יום בשבוע</h3>
-    <div id="m-dow-chart"></div>
-  </div>
-  <div class="card">
-    <h3 style="font-size:15px">מגמה חודשית</h3>
-    <div id="m-chart"></div>
-  </div>
-  <div id="m-patterns"></div>
   <div class="card">
     <h3 style="font-size:15px">לאן הלך הכסף</h3>
     <div id="m-cats"></div>
   </div>
-  <div class="card">
-    <div class="row spread">
-      <h3 style="font-size:15px">קבועות חודשיות</h3>
-      <button class="btn" id="fixed-add">+ הוספה</button>
+
+  <!-- collapsed by default: the professional depth -->
+  <section class="collapse" id="c-graphs">
+    <button class="collapse-head" aria-expanded="false">
+      <span class="ch-title">📈 גרפים</span>
+      <span class="chev" aria-hidden="true">⌄</span>
+    </button>
+    <div class="collapse-body">
+      <h4 class="sub-h">הוצאות לפי יום בשבוע</h4>
+      <div id="m-dow-chart"></div>
+      <h4 class="sub-h">מגמה חודשית</h4>
+      <div id="m-chart"></div>
+      <h4 class="sub-h">מפת חום — שנה אחרונה</h4>
+      <div id="m-heatmap"></div>
     </div>
-    <p class="mut" style="margin:2px 0 4px">משכורת, שכ"ד, מנויים - נספרות אוטומטית בכל חודש</p>
-    <div id="fixed-list"></div>
-  </div>
-  <div class="card">
-    <div class="row spread" style="margin-bottom:8px">
-      <h3 style="font-size:15px">כל התנועות של החודש</h3>
-    </div>
-    <div class="tx-filter" data-noswipe>
-      <input id="m-search" class="tx-search" placeholder="🔍 חיפוש לפי קטגוריה או הערה" autocomplete="off">
-      <div class="filter-chips" id="m-filter-chips">
-        <button class="chip on" data-filter="all">הכל</button>
-        <button class="chip" data-filter="expense">הוצאות</button>
-        <button class="chip" data-filter="income">הכנסות</button>
-        <button class="chip" data-filter="night">🌙 לילה</button>
+  </section>
+
+  <section class="collapse" id="c-patterns">
+    <button class="collapse-head" aria-expanded="false">
+      <span class="ch-title">💡 דפוסים ותובנות</span>
+      <span class="chev" aria-hidden="true">⌄</span>
+    </button>
+    <div class="collapse-body"><div id="m-patterns"></div></div>
+  </section>
+
+  <section class="collapse" id="c-fixed">
+    <button class="collapse-head" aria-expanded="false">
+      <span class="ch-title">🔁 קבועות חודשיות</span>
+      <span class="ch-meta" id="fixed-meta"></span>
+      <span class="chev" aria-hidden="true">⌄</span>
+    </button>
+    <div class="collapse-body">
+      <div class="row spread">
+        <p class="mut" style="margin:2px 0 4px">משכורת, שכ"ד, מנויים - נספרות אוטומטית בכל חודש</p>
+        <button class="btn" id="fixed-add">+ הוספה</button>
       </div>
+      <div id="fixed-list"></div>
     </div>
-    <div id="m-tx"></div>
-  </div>
+  </section>
+
+  <section class="collapse" id="c-tx">
+    <button class="collapse-head" aria-expanded="false">
+      <span class="ch-title">🧾 כל התנועות</span>
+      <span class="ch-meta" id="tx-meta"></span>
+      <span class="chev" aria-hidden="true">⌄</span>
+    </button>
+    <div class="collapse-body">
+      <div class="tx-filter" data-noswipe>
+        <input id="m-search" class="tx-search" placeholder="🔍 חיפוש לפי קטגוריה או הערה" autocomplete="off">
+        <div class="filter-chips" id="m-filter-chips">
+          <button class="chip on" data-filter="all">הכל</button>
+          <button class="chip" data-filter="expense">הוצאות</button>
+          <button class="chip" data-filter="income">הכנסות</button>
+          <button class="chip" data-filter="night">🌙 לילה</button>
+        </div>
+      </div>
+      <div id="m-tx"></div>
+    </div>
+  </section>
 </section>
 
 <!-- ================= SETTINGS ================= -->
@@ -718,6 +789,8 @@ function load() {
           const d = new Date(t.ts); return d >= w.start && d < w.end; })();
         t.bucket = inW ? "weekend" : "base";
       }
+      // the "other" bucket was retired — fold it into the general bucket
+      if (t.bucket === "other") t.bucket = "base";
     });
     return s;
   } catch { return DEFAULTS(); }
@@ -987,8 +1060,6 @@ function updateBudgetStrip() {
     } else {
       el.innerHTML = `<span>✈️ טיול — נכנס לתקציב הטיול</span>`;
     }
-  } else {
-    el.innerHTML = `<span>🏷️ "אחר" — נכנס להוצאות החודש (בנפרד מהסופ"ש)</span>`;
   }
 }
 
@@ -1015,7 +1086,7 @@ function maybeNotify(title, body) {
   }
 }
 
-let lastAddedId = null, toastTimer = null;
+let undoFn = null, toastTimer = null;
 function addTx(type, cat) {
   const amount = parseFloat(amountStr);
   if (!amount || amount <= 0) { showToast("קודם מקלידים סכום 🙂", false); return; }
@@ -1024,7 +1095,6 @@ function addTx(type, cat) {
   const trip = activeTrip();
   if (type === "expense" && txBucket === "travel" && trip) t.tripId = trip.id;
   S.tx.push(t); save();
-  lastAddedId = t.id;
   amountStr = ""; $("#note-input").value = ""; renderAmount();
   let msg, alertMsg = "";
   if (type === "income") msg = `נשמרה הכנסה של ${fmt2(amount)} ✓`;
@@ -1045,8 +1115,6 @@ function addTx(type, cat) {
     if (cr === 0.7) alertMsg = `🟡 עברת 70% מתקציב הסופ"ש`;
     else if (cr === 0.9) alertMsg = `⚠️ עברת 90% מתקציב הסופ"ש`;
     if (cr >= 0.9) maybeNotify('תקציב סופ"ש', left >= 0 ? `נשארו ${fmt(left)} מהתקציב` : `חריגה של ${fmt(-left)}`);
-  } else if (t.bucket === "other") {
-    msg = `נשמר ✓ ${fmt2(amount)} · הוצאת "אחר"`;
   } else {
     msg = `נשמר ✓ ${fmt2(amount)} · נכנס להוצאות החודש`;
     const now = new Date(), mb = S.settings.monthlyBudget;
@@ -1058,21 +1126,27 @@ function addTx(type, cat) {
       if (cr >= 0.9) maybeNotify("תקציב חודשי", left >= 0 ? `נשארו ${fmt(left)} מהתקציב` : `חריגה של ${fmt(-left)}`);
     }
   }
-  showToast(alertMsg || msg, true);
+  showToast(alertMsg || msg, () => { S.tx = S.tx.filter((x) => x.id !== t.id); save(); render(); });
   render();
 }
-function showToast(msg, withUndo) {
+/* delete a transaction with an undo affordance (used by swipe-to-delete) */
+function deleteTxWithUndo(id) {
+  const idx = S.tx.findIndex((t) => t.id === id); if (idx < 0) return;
+  const [removed] = S.tx.splice(idx, 1); save(); render();
+  showToast("נמחק ✓", () => { S.tx.push(removed); save(); render(); });
+}
+/* showToast(msg, undo): undo may be a function (runs on tap) or true/false */
+function showToast(msg, undo) {
   $("#toast-msg").textContent = msg;
-  $("#toast-undo").style.display = withUndo ? "" : "none";
+  const hasUndo = typeof undo === "function" || undo === true;
+  $("#toast-undo").style.display = hasUndo ? "" : "none";
+  undoFn = typeof undo === "function" ? undo : null;
   $("#toast").classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => $("#toast").classList.remove("show"), 5000);
 }
 $("#toast-undo").addEventListener("click", () => {
-  if (lastAddedId) {
-    S.tx = S.tx.filter((t) => t.id !== lastAddedId); save();
-    lastAddedId = null; render();
-  }
+  if (undoFn) { undoFn(); undoFn = null; }
   $("#toast").classList.remove("show");
 });
 
@@ -1242,7 +1316,7 @@ function txItem(t) {
   const d = new Date(t.ts);
   const night = t.type === "expense" && isNight(t.ts);
   const when = `${DAY_NAMES[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1} · ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  return `<div class="tx-item${night ? " night" : ""}" data-tx="${t.id}">
+  return `<div class="tx-item${night ? " night" : ""}" data-tx="${t.id}" data-noswipe>
     <span class="tx-emoji">${c.emoji}</span>
     <span class="tx-main"><div class="tx-name">${c.name}${night ? ` <span class="night-badge" title="הוצאת לילה">🌙</span>` : ""}${t.note ? ` · <span class="mut">${esc(t.note)}</span>` : ""}</div>
     <div class="tx-time">${when}</div></span>
@@ -1367,13 +1441,12 @@ function renderMonth() {
   // spending by day of week (reported expenses) — reads Sun→Sat right-to-left
   const dow = [0, 0, 0, 0, 0, 0, 0];
   m.reportedExp.forEach((t) => { dow[new Date(t.ts).getDay()] += t.amount; });
-  if (m.reportedExp.length) {
-    const dowItems = [6, 5, 4, 3, 2, 1, 0].map((i) => ({ label: DAY_SHORT[i], value: Math.round(dow[i]), over: false }));
-    $("#m-dow-chart").innerHTML = vbars(dowItems, 0);
-    $("#m-dow").style.display = "";
-  } else {
-    $("#m-dow").style.display = "none";
-  }
+  $("#m-dow-chart").innerHTML = m.reportedExp.length
+    ? vbars([6, 5, 4, 3, 2, 1, 0].map((i) => ({ label: DAY_SHORT[i], value: Math.round(dow[i]), over: false })), 0)
+    : `<div class="chart-empty">אין הוצאות מדווחות החודש</div>`;
+
+  // year heatmap (all-time, independent of the viewed month)
+  renderHeatmap();
 
   // monthly recap (this-month narrative) + all-time patterns
   renderRecap(m);
@@ -1395,6 +1468,7 @@ function renderMonth() {
   }).join("") : `<div class="empty">אין הוצאות מדווחות החודש</div>`;
 
   // fixed list
+  $("#fixed-meta").textContent = S.fixed.length ? `${S.fixed.length}` : "";
   $("#fixed-list").innerHTML = S.fixed.length ? S.fixed.map((f) => `
     <div class="tx-item" data-fixed="${f.id}">
       <span class="tx-emoji">${f.type === "income" ? "💰" : "🏠"}</span>
@@ -1518,6 +1592,7 @@ function renderMonthTx() {
     return cn.toLowerCase().includes(q) || (t.note || "").toLowerCase().includes(q);
   });
   const el = $("#m-tx");
+  $("#tx-meta").textContent = m.txs.length ? `${m.txs.length}` : "";
   if (!m.txs.length) { el.innerHTML = `<div class="empty">אין תנועות החודש</div>`; return; }
   if (!list.length) { el.innerHTML = `<div class="empty">לא נמצאו תנועות תואמות</div>`; return; }
   const filtered = q || txFilter !== "all";
@@ -1562,9 +1637,11 @@ function renderRecap(m) {
 /* ---------- spending patterns: all-time analytical stats (not per-month) ---------- */
 function renderPatterns() {
   const el = $("#m-patterns");
+  const wrap = $("#c-patterns");
   // all tracked spending except travel (kept separate everywhere in the app)
   const exp = S.tx.filter((t) => t.type === "expense" && t.bucket !== "travel");
-  if (exp.length < 3) { el.innerHTML = ""; el.style.display = "none"; return; }
+  if (exp.length < 3) { el.innerHTML = ""; wrap.style.display = "none"; return; }
+  wrap.style.display = "";
   const total = sum(exp);
   const lines = [];
   // tracking span in months
@@ -1601,23 +1678,106 @@ function renderPatterns() {
     const pct = Math.round(nightSum / total * 100);
     if (pct >= 10) lines.push(["🌙", `${pct}% מכל ההוצאות היו בלילה (22:00–06:00)`]);
   }
-  el.innerHTML = `<div class="card">
-    <h3 style="font-size:15px">💡 דפוסים ותובנות · כל הזמן</h3>
-    <p class="mut" style="margin:-2px 0 6px">מאז ${first.getDate()}.${first.getMonth() + 1}.${String(first.getFullYear()).slice(2)} · ${monthSpan} חודשים במעקב</p>
-    ${lines.map(([em, t]) => `<div class="pattern-line"><span class="em">${em}</span><span>${t}</span></div>`).join("")}
-  </div>`;
-  el.style.display = "";
+  el.innerHTML = `
+    <p class="mut" style="margin:0 0 6px">מאז ${first.getDate()}.${first.getMonth() + 1}.${String(first.getFullYear()).slice(2)} · ${monthSpan} חודשים במעקב</p>
+    ${lines.map(([em, t]) => `<div class="pattern-line"><span class="em">${em}</span><span>${t}</span></div>`).join("")}`;
+}
+
+/* ---------- year heatmap: daily reported spend over the last ~53 weeks ---------- */
+function renderHeatmap() {
+  const el = $("#m-heatmap");
+  const exp = S.tx.filter((t) => t.type === "expense" && t.bucket !== "travel");
+  if (!exp.length) { el.innerHTML = `<div class="chart-empty">אין עדיין נתונים</div>`; return; }
+  const key = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const daily = {};
+  exp.forEach((t) => { const d = new Date(t.ts); daily[key(d)] = (daily[key(d)] || 0) + t.amount; });
+  // window: the Sunday on/before (today − 363) … today
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const start = new Date(today); start.setDate(start.getDate() - 363);
+  start.setDate(start.getDate() - start.getDay());
+  // intensity thresholds from nonzero days (quartiles)
+  const vals = Object.values(daily).filter((v) => v > 0).sort((a, b) => a - b);
+  const q = (p) => vals.length ? vals[Math.min(vals.length - 1, Math.floor(p * vals.length))] : 0;
+  const t1 = q(0.25), t2 = q(0.5), t3 = q(0.75);
+  const level = (v) => v <= 0 ? 0 : v <= t1 ? 1 : v <= t2 ? 2 : v <= t3 ? 3 : 4;
+  const cells = [];
+  for (const cur = new Date(start); cur <= today; cur.setDate(cur.getDate() + 1)) {
+    const v = daily[key(cur)] || 0, lv = level(v);
+    const label = `${cur.getDate()}.${cur.getMonth() + 1}${v > 0 ? ": " + fmt(v) : ""}`;
+    cells.push(`<div class="hm-cell${lv ? " l" + lv : ""}" title="${label}"></div>`);
+  }
+  el.innerHTML = `<div class="heatmap" data-noswipe><div class="hm-grid">${cells.join("")}</div></div>
+    <div class="hm-legend"><span>פחות</span>
+      <span class="hm-cell"></span><span class="hm-cell l1"></span><span class="hm-cell l2"></span>
+      <span class="hm-cell l3"></span><span class="hm-cell l4"></span><span>יותר</span></div>`;
+  const hm = el.querySelector(".heatmap");
+  if (hm) hm.scrollLeft = hm.scrollWidth; // start at the most recent weeks
 }
 
 /* ======================== edit modals (tx/fixed/cat) ================= */
+let lastSwipeEnd = 0; // timestamp of the last horizontal swipe on a tx row (suppresses the trailing click)
 document.body.addEventListener("click", (e) => {
   const txEl = e.target.closest("[data-tx]");
-  if (txEl) { openTxModal(txEl.dataset.tx); return; }
+  if (txEl) { if (Date.now() - lastSwipeEnd < 400) return; openTxModal(txEl.dataset.tx); return; }
   const fxEl = e.target.closest("[data-fixed]");
   if (fxEl) { openFixedModal(fxEl.dataset.fixed); return; }
   const wkEl = e.target.closest("[data-weekend]");
   if (wkEl) { openWeekendDetailsModal(wkEl.dataset.weekend); return; }
 });
+
+/* collapsible sections: tap the header to expand/collapse */
+document.body.addEventListener("click", (e) => {
+  const head = e.target.closest(".collapse-head"); if (!head) return;
+  const c = head.closest(".collapse");
+  const open = c.classList.toggle("open");
+  head.setAttribute("aria-expanded", open ? "true" : "false");
+  if (open) { const hm = c.querySelector(".heatmap"); if (hm) hm.scrollLeft = hm.scrollWidth; }
+});
+
+/* swipe a transaction row sideways to delete it (with undo) */
+(function () {
+  let row = null, x0 = 0, y0 = 0, dx = 0, active = false;
+  const THRESH = 90;
+  document.body.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) { row = null; return; }
+    const r = e.target.closest(".tx-item[data-tx]");
+    if (!r) { row = null; return; }
+    row = r; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; active = false;
+  }, { passive: true });
+  document.body.addEventListener("touchmove", (e) => {
+    if (!row) return;
+    dx = e.touches[0].clientX - x0;
+    const dy = e.touches[0].clientY - y0;
+    if (!active) {
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.4) active = true;
+      else if (Math.abs(dy) > 10) { row = null; return; }
+      else return;
+    }
+    row.style.transition = "none";
+    row.style.transform = `translateX(${dx}px)`;
+    row.classList.add("swiping");
+    row.classList.toggle("will-delete", Math.abs(dx) >= THRESH);
+  }, { passive: true });
+  const finish = () => {
+    if (!row) return;
+    const r = row, adx = Math.abs(dx), id = r.dataset.tx;
+    if (active) lastSwipeEnd = Date.now(); // suppress the click that trails this gesture
+    r.classList.remove("swiping");
+    if (adx >= THRESH) {
+      r.style.transition = "transform .18s ease, opacity .18s ease";
+      r.style.transform = `translateX(${dx > 0 ? "110%" : "-110%"})`;
+      r.style.opacity = "0";
+      setTimeout(() => deleteTxWithUndo(id), 170);
+    } else {
+      r.style.transition = "transform .18s ease";
+      r.style.transform = "translateX(0)";
+      r.classList.remove("will-delete");
+    }
+    row = null; dx = 0; active = false;
+  };
+  document.body.addEventListener("touchend", finish, { passive: true });
+  document.body.addEventListener("touchcancel", finish, { passive: true });
+})();
 function modal(html) { $("#modal").innerHTML = html; $("#modal-back").classList.add("show"); }
 function closeModal() { $("#modal-back").classList.remove("show"); }
 $("#modal-back").addEventListener("click", (e) => { if (e.target.id === "modal-back") closeModal(); });
@@ -1909,6 +2069,7 @@ function render() {
 }
 syncBucketButtons();
 updateRepeatButton();
+save(); // persist any one-time data migrations (e.g. retired "other" bucket) so backups stay clean
 render();
 
 // fire reminders on open and whenever the app returns to the foreground
