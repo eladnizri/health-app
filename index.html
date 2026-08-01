@@ -206,7 +206,8 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
   display: none; align-items: flex-end; justify-content: center; }
 .modal-back.show { display: flex; }
 .modal { background: var(--page); width: 100%; max-width: 560px;
-  border-radius: 20px 20px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); }
+  border-radius: 20px 20px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  max-height: 88vh; overflow-y: auto; }
 .modal h3 { margin-bottom: 10px; }
 .modal .field { margin: 10px 0; }
 .modal .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 3px; }
@@ -527,12 +528,34 @@ h2 { font-weight: 800; }
   margin-top: 6px; font-size: 10.5px; color: var(--muted); direction: ltr; }
 .hm-legend .hm-cell { width: 10px; height: 10px; }
 
-/* ---------- swipe-to-delete on transaction rows ---------- */
+/* ---------- swipe a transaction row: one way deletes, the other edits ---------- */
 .tx-item[data-tx] { position: relative; touch-action: pan-y; }
 .tx-item[data-tx].swiping { will-change: transform; }
 .tx-item[data-tx].will-delete { background: color-mix(in srgb, var(--crit) 14%, transparent); }
 .tx-item[data-tx].will-delete::after { content: "🗑 מחיקה"; position: absolute; inset-inline-end: 12px;
   top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 700; color: var(--crit); }
+.tx-item[data-tx].will-edit { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.tx-item[data-tx].will-edit::after { content: "✏️ עריכה"; position: absolute; inset-inline-start: 12px;
+  top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 700; color: var(--accent); }
+
+/* ---------- bank-import wizard (all inside the modal) ---------- */
+.imp-scroll { max-height: 62vh; overflow-y: auto; margin: 4px -4px 0; padding: 0 4px; }
+.imp-months { margin: 8px 0; }
+.imp-months .row { padding: 5px 0; border-top: 1px solid var(--grid); font-size: 14px; }
+.imp-months .row:first-child { border-top: none; }
+.imp-note { font-size: 12.5px; color: var(--muted); margin: 8px 0; line-height: 1.7; }
+.imp-map-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--grid); }
+.imp-map-row:first-child { border-top: none; }
+.imp-map-row .bc { flex: 1; font-size: 13.5px; font-weight: 600; min-width: 0; }
+.imp-map-row select { flex: none; width: 46%; }
+.imp-map-row select.need { border-color: var(--warn); box-shadow: 0 0 0 2px color-mix(in srgb, var(--warn) 25%, transparent); }
+.imp-dup { padding: 9px 0; border-top: 1px solid var(--grid); }
+.imp-dup:first-child { border-top: none; }
+.imp-dup .d-main { font-size: 13.5px; font-weight: 600; }
+.imp-dup .d-sub { font-size: 12px; color: var(--muted); margin: 1px 0 6px; }
+.imp-dup .seg { margin: 0; width: 100%; }
+.imp-dup .seg button { flex: 1; font-size: 12px; padding: 5px 6px; }
+.imp-step { font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .3px; margin-bottom: 2px; }
 
 /* ---------- compact report layout for short phones (e.g. iPhone SE) ----------
    Keeps the whole entry flow — amount, quick amounts, categories, keypad —
@@ -724,6 +747,14 @@ h2 { font-weight: 800; }
     <p class="mut" id="reminders-note" style="margin:6px 0 0"></p>
   </div>
   <div class="card">
+    <h3 style="font-size:15px">ייבוא מהבנק</h3>
+    <p class="mut">ייבוא קובץ Excel של פירוט עסקאות (כרטיס אשראי) — למילוי חודשים שלא דיווחת. העסקאות נכנסות לפי תאריך העסקה.</p>
+    <div class="btn-row">
+      <button class="btn primary" id="bank-import">ייבוא קובץ Excel</button>
+    </div>
+    <input type="file" id="bank-file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple style="display:none">
+  </div>
+  <div class="card">
     <h3 style="font-size:15px">גיבוי ונתונים</h3>
     <p class="mut">הנתונים נשמרים רק על המכשיר הזה. מומלץ לייצא גיבוי מדי פעם.</p>
     <div class="btn-row">
@@ -907,6 +938,21 @@ function goToScreen(i) {
   if (dir) el.classList.add(dir > 0 ? "from-next" : "from-prev");
   window.scrollTo(0, 0);
   render();
+  if (name === "month") animateMonthNumbers();
+}
+/* gentle count-up on the month's headline numbers when the screen is opened/navigated */
+function animateMonthNumbers() {
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  document.querySelectorAll("#s-month .count").forEach((el) => {
+    const to = parseFloat(el.dataset.to); if (isNaN(to)) return;
+    const prefix = el.dataset.prefix || "", dur = 480, t0 = performance.now();
+    const tick = (t) => {
+      const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = prefix + fmt(to * e);
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
 }
 document.getElementById("tabbar").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
@@ -1068,11 +1114,35 @@ function renderCats() {
     `<button class="cat-btn" data-cat="${c.id}"><span class="em">${c.emoji}</span>${c.name}</button>`
   ).join("");
 }
+let catLongPress = false; // set when a long-press opens the category editor (suppresses the tap that follows)
 $("#cats").addEventListener("click", (e) => {
   const b = e.target.closest(".cat-btn"); if (!b) return;
+  if (catLongPress) { catLongPress = false; return; }
   addTx("expense", b.dataset.cat);
 });
 $("#save-income").addEventListener("click", () => addTx("income", null));
+
+/* long-press a category on the report screen to edit it (emoji / name / delete) */
+(function () {
+  let timer = null, btn = null;
+  const start = (e) => {
+    const b = e.target.closest(".cat-btn"); if (!b) return;
+    btn = b; catLongPress = false;
+    timer = setTimeout(() => {
+      catLongPress = true;
+      if (navigator.vibrate) navigator.vibrate(12);
+      openCatModal(b.dataset.cat);
+    }, 500);
+  };
+  const cancel = () => { clearTimeout(timer); timer = null; };
+  const cats = $("#cats");
+  cats.addEventListener("touchstart", start, { passive: true });
+  cats.addEventListener("touchend", cancel);
+  cats.addEventListener("touchmove", cancel, { passive: true });
+  cats.addEventListener("mousedown", start);
+  cats.addEventListener("mouseup", cancel);
+  cats.addEventListener("mouseleave", cancel);
+})();
 
 /* Smart budget alert: highest of 70/90/100% newly crossed by this expense. */
 function budgetThresholdCrossed(before, after, budget) {
@@ -1350,8 +1420,8 @@ function monthTotals(y, m) {
   return { inc, out, net: inc - out, txs, exp, reportedExp, fixedIn, fixedOut, reportedOut, travelOut,
            weekendOut: byBucket("weekend"), baseOut: byBucket("base"), otherOut: byBucket("other") };
 }
-$("#m-prev").addEventListener("click", () => { mMonth--; if (mMonth < 0) { mMonth = 11; mYear--; } renderMonth(); });
-$("#m-next").addEventListener("click", () => { mMonth++; if (mMonth > 11) { mMonth = 0; mYear++; } renderMonth(); });
+$("#m-prev").addEventListener("click", () => { mMonth--; if (mMonth < 0) { mMonth = 11; mYear--; } renderMonth(); animateMonthNumbers(); });
+$("#m-next").addEventListener("click", () => { mMonth++; if (mMonth > 11) { mMonth = 0; mYear++; } renderMonth(); animateMonthNumbers(); });
 $("#m-search").addEventListener("input", (e) => { txQuery = e.target.value; renderMonthTx(); });
 $("#m-filter-chips").addEventListener("click", (e) => {
   const b = e.target.closest(".chip"); if (!b) return;
@@ -1371,13 +1441,14 @@ function renderMonth() {
   // Savings goal tracking for current month
   const isThisMonth = mYear === new Date().getFullYear() && mMonth === new Date().getMonth();
   const goal = S.settings.savingsGoal;
+  const netPfx = m.net < 0 ? "-" : (goal > 0 && isThisMonth ? "" : "+");
   const savingsKpi = goal > 0 && isThisMonth
-    ? `<div class="kpi"><div class="l">מטרת חיסכון</div><div class="v num ${m.net >= goal ? "pos" : "neg"}">${fmt(m.net)}</div><div class="cap" style="color:var(--muted)">${fmt(goal)} מטרה</div></div>`
-    : `<div class="kpi"><div class="l">חיסכון</div><div class="v num ${m.net >= 0 ? "pos" : "neg"}">${m.net >= 0 ? "+" : "-"}${fmt(Math.abs(m.net))}</div></div>`;
+    ? `<div class="kpi"><div class="l">מטרת חיסכון</div><div class="v num count ${m.net >= goal ? "pos" : "neg"}" data-to="${Math.abs(m.net)}" data-prefix="${netPfx}">${netPfx}${fmt(Math.abs(m.net))}</div><div class="cap" style="color:var(--muted)">${fmt(goal)} מטרה</div></div>`
+    : `<div class="kpi"><div class="l">חיסכון</div><div class="v num count ${m.net >= 0 ? "pos" : "neg"}" data-to="${Math.abs(m.net)}" data-prefix="${netPfx}">${netPfx}${fmt(Math.abs(m.net))}</div></div>`;
 
   $("#m-kpis").innerHTML = `
-    <div class="kpi"><div class="l">הכנסות</div><div class="v num">${fmt(m.inc)}</div></div>
-    <div class="kpi"><div class="l">הוצאות</div><div class="v num">${fmt(m.out)}</div></div>
+    <div class="kpi"><div class="l">הכנסות</div><div class="v num count" data-to="${m.inc}" data-prefix="">${fmt(m.inc)}</div></div>
+    <div class="kpi"><div class="l">הוצאות</div><div class="v num count" data-to="${m.out}" data-prefix="">${fmt(m.out)}</div></div>
     ${savingsKpi}`;
 
   // comparison to the previous month (reported expenses)
@@ -1627,7 +1698,7 @@ function renderRecap(m) {
   }
   el.innerHTML = `<div class="card recap-card">
     <div class="rc-title">🎊 סיכום ${MONTHS[mMonth]}</div>
-    <div class="rc-hero ${net >= 0 ? "pos" : "neg"} num">${heroTxt}</div>
+    <div class="rc-hero count ${net >= 0 ? "pos" : "neg"} num" data-to="${Math.abs(net)}" data-prefix="${net >= 0 ? "+" : "-"}">${heroTxt}</div>
     <div class="rc-sub">${heroSub}</div>
     ${lines.length ? `<div class="rc-lines">${lines.map(([em, t]) => `<div class="rc-line"><span class="em">${em}</span><span>${t}</span></div>`).join("")}</div>` : ""}
   </div>`;
@@ -1734,10 +1805,11 @@ document.body.addEventListener("click", (e) => {
   if (open) { const hm = c.querySelector(".heatmap"); if (hm) hm.scrollLeft = hm.scrollWidth; }
 });
 
-/* swipe a transaction row sideways to delete it (with undo) */
+/* swipe a transaction row: swipe left → delete (with undo), swipe right → edit */
 (function () {
   let row = null, x0 = 0, y0 = 0, dx = 0, active = false;
   const THRESH = 90;
+  const snapBack = (r) => { r.style.transition = "transform .18s ease"; r.style.transform = "translateX(0)"; r.classList.remove("will-delete", "will-edit"); };
   document.body.addEventListener("touchstart", (e) => {
     if (e.touches.length !== 1) { row = null; return; }
     const r = e.target.closest(".tx-item[data-tx]");
@@ -1756,22 +1828,23 @@ document.body.addEventListener("click", (e) => {
     row.style.transition = "none";
     row.style.transform = `translateX(${dx}px)`;
     row.classList.add("swiping");
-    row.classList.toggle("will-delete", Math.abs(dx) >= THRESH);
+    const past = Math.abs(dx) >= THRESH;
+    row.classList.toggle("will-delete", past && dx < 0);
+    row.classList.toggle("will-edit", past && dx > 0);
   }, { passive: true });
   const finish = () => {
     if (!row) return;
-    const r = row, adx = Math.abs(dx), id = r.dataset.tx;
+    const r = row, adx = Math.abs(dx), id = r.dataset.tx, isDelete = dx < 0;
     if (active) lastSwipeEnd = Date.now(); // suppress the click that trails this gesture
     r.classList.remove("swiping");
-    if (adx >= THRESH) {
+    if (adx >= THRESH && isDelete) {
       r.style.transition = "transform .18s ease, opacity .18s ease";
-      r.style.transform = `translateX(${dx > 0 ? "110%" : "-110%"})`;
-      r.style.opacity = "0";
+      r.style.transform = "translateX(-110%)"; r.style.opacity = "0";
       setTimeout(() => deleteTxWithUndo(id), 170);
+    } else if (adx >= THRESH) {
+      snapBack(r); openTxModal(id);
     } else {
-      r.style.transition = "transform .18s ease";
-      r.style.transform = "translateX(0)";
-      r.classList.remove("will-delete");
+      snapBack(r);
     }
     row = null; dx = 0; active = false;
   };
@@ -1960,6 +2033,26 @@ $("#cat-add").addEventListener("click", () => {
   };
   $("#c-cancel").onclick = closeModal;
 });
+/* edit an existing category (opened by long-pressing it on the report screen) */
+function openCatModal(id) {
+  const c = S.categories.find((x) => x.id === id); if (!c) return;
+  modal(`
+    <h3>עריכת קטגוריה</h3>
+    <div class="field"><label>אימוג'י</label><input id="c-emoji" value="${c.emoji}" maxlength="4"></div>
+    <div class="field"><label>שם</label><input id="c-name" value="${esc(c.name)}"></div>
+    <div class="btn-row">
+      <button class="btn primary" id="c-save">שמירה</button>
+      <button class="btn" id="c-cancel">ביטול</button>
+      ${S.categories.length > 1 ? `<button class="btn danger" id="c-del" style="margin-inline-start:auto">מחיקה</button>` : ""}
+    </div>`);
+  $("#c-save").onclick = () => {
+    const name = $("#c-name").value.trim(); if (!name) return;
+    c.name = name; c.emoji = $("#c-emoji").value.trim() || c.emoji;
+    save(); closeModal(); render();
+  };
+  const del = $("#c-del"); if (del) del.onclick = () => { S.categories = S.categories.filter((x) => x.id !== id); save(); closeModal(); render(); };
+  $("#c-cancel").onclick = closeModal;
+}
 
 /* -------- backup / export -------- */
 function download(filename, text, mime) {
@@ -2016,6 +2109,240 @@ $("#wipe").addEventListener("click", () => {
   $("#w-yes").onclick = () => { S = DEFAULTS(); save(); closeModal(); render(); };
   $("#w-no").onclick = closeModal;
 });
+
+/* ==================== bank statement import (Excel) ====================
+   Reads Leumi-Visa style .xlsx exports with zero dependencies: unzip via the
+   browser's DecompressionStream, then parse the sheet XML with DOMParser.
+   Everything happens inside the modal so the main screens stay clean. */
+const BANK_CAT_MAP = {
+  "מסעדות, קפה וברים": "eat", "מזון וצריכה": "market", "פנאי, בידור וספורט": "fun",
+  "דלק, חשמל וגז": "fuel", "תחבורה ורכבים": "fuel", "אופנה": "shop", "חשמל ומחשבים": "shop",
+};
+const colIndex = (letters) => { let n = 0; for (const ch of letters) n = n * 26 + (ch.charCodeAt(0) - 64); return n - 1; };
+const sameYMD = (iso, y, m, d) => { const t = new Date(iso); return t.getFullYear() === y && t.getMonth() + 1 === m && t.getDate() === d; };
+
+async function inflateRaw(bytes) {
+  if (typeof DecompressionStream === "undefined") throw new Error("no-decompress");
+  const ds = new DecompressionStream("deflate-raw");
+  const ab = await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer();
+  return new Uint8Array(ab);
+}
+/* minimal xlsx reader → array of sheets, each a 2-D array of cell values */
+async function readXlsx(buf) {
+  const u8 = new Uint8Array(buf), dv = new DataView(buf);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= 0; i--) { if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; } }
+  if (eocd < 0) throw new Error("not-xlsx");
+  const count = dv.getUint16(eocd + 10, true);
+  let off = dv.getUint32(eocd + 16, true);
+  const entries = {};
+  for (let k = 0; k < count; k++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true), compSize = dv.getUint32(off + 20, true);
+    const fnLen = dv.getUint16(off + 28, true), exLen = dv.getUint16(off + 30, true), cmLen = dv.getUint16(off + 32, true);
+    const localOff = dv.getUint32(off + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(off + 46, off + 46 + fnLen));
+    entries[name] = { method, compSize, localOff };
+    off += 46 + fnLen + exLen + cmLen;
+  }
+  const readEntry = async (name) => {
+    const e = entries[name]; if (!e) return null;
+    const fnLen = dv.getUint16(e.localOff + 26, true), exLen = dv.getUint16(e.localOff + 28, true);
+    const dataStart = e.localOff + 30 + fnLen + exLen;
+    const comp = u8.subarray(dataStart, dataStart + e.compSize);
+    const out = e.method === 0 ? comp : await inflateRaw(comp);
+    return new TextDecoder("utf-8").decode(out);
+  };
+  // shared strings
+  const sst = [];
+  const sstXml = await readEntry("xl/sharedStrings.xml");
+  if (sstXml) {
+    const doc = new DOMParser().parseFromString(sstXml, "application/xml");
+    const sis = doc.getElementsByTagName("si");
+    for (let i = 0; i < sis.length; i++) {
+      const ts = sis[i].getElementsByTagName("t"); let s = "";
+      for (let j = 0; j < ts.length; j++) s += ts[j].textContent;
+      sst.push(s);
+    }
+  }
+  const sheetNames = Object.keys(entries).filter((n) => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort();
+  const sheets = [];
+  for (const sn of sheetNames) {
+    const xml = await readEntry(sn); if (!xml) continue;
+    const doc = new DOMParser().parseFromString(xml, "application/xml");
+    const rowsEl = doc.getElementsByTagName("row"), rows = [];
+    for (let i = 0; i < rowsEl.length; i++) {
+      const cs = rowsEl[i].getElementsByTagName("c"), cells = [];
+      for (let j = 0; j < cs.length; j++) {
+        const c = cs[j], ref = c.getAttribute("r") || "", col = ref.replace(/[0-9]/g, "");
+        const ci = col ? colIndex(col) : j, t = c.getAttribute("t");
+        const vEl = c.getElementsByTagName("v")[0], tEl = c.getElementsByTagName("t")[0];
+        let val = null;
+        if (t === "s") val = vEl ? sst[+vEl.textContent] : "";
+        else if (t === "inlineStr" || t === "str") val = tEl ? tEl.textContent : (vEl ? vEl.textContent : "");
+        else if (vEl) { const n = +vEl.textContent; val = isNaN(n) ? vEl.textContent : n; }
+        cells[ci] = val;
+      }
+      rows.push(cells);
+    }
+    sheets.push(rows);
+  }
+  return sheets;
+}
+
+let IMP = null;
+async function onBankFiles(fileList) {
+  const files = [...fileList]; if (!files.length) return;
+  showToast("קורא את הקובץ…", false);
+  try {
+    const cands = []; let foreign = 0, canceled = 0;
+    for (const f of files) {
+      const sheets = await readXlsx(await f.arrayBuffer());
+      for (const rows of sheets) {
+        let h = -1;
+        for (let i = 0; i < rows.length; i++) { if (rows[i] && rows[i][0] === "תאריך עסקה") { h = i; break; } }
+        if (h < 0) continue;
+        const hdr = rows[h], col = (name) => hdr.indexOf(name);
+        const cD = col("תאריך עסקה"), cM = col("שם בית העסק"), cC = col("קטגוריה"), cA = col("סכום חיוב"), cCur = col("מטבע חיוב");
+        const raw = [];
+        for (let i = h + 1; i < rows.length; i++) {
+          const r = rows[i]; if (!r) continue;
+          const dcell = r[cD]; if (dcell == null || dcell === "") continue;
+          if (dcell === "סך הכל") break;
+          const amt = r[cA]; if (typeof amt !== "number") continue;
+          if (r[cCur] !== "₪") { foreign++; continue; }
+          raw.push({ date: String(dcell), merch: String(r[cM] || "").trim(), bankCat: String(r[cC] || "שונות").trim(), amount: amt });
+        }
+        // net out reversals: each negative cancels a matching positive (same merchant + amount)
+        const used = new Set();
+        raw.filter((x) => x.amount < 0).forEach((n) => {
+          const idx = raw.findIndex((x, ix) => !used.has(ix) && x.amount === -n.amount && x.merch === n.merch && x !== n);
+          if (idx >= 0) used.add(idx);
+        });
+        raw.forEach((x, ix) => {
+          if (x.amount < 0) { canceled++; return; }
+          if (used.has(ix)) { canceled++; return; }
+          const [dd, mm, yy] = x.date.split("-").map(Number);
+          if (!dd || !mm || !yy) return;
+          const dt = new Date(yy, mm - 1, dd, 12, 0, 0);
+          const sig = `${yy}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}|${x.merch}|${x.amount}`;
+          cands.push({ ts: dt.toISOString(), y: yy, m: mm, d: dd, merch: x.merch, bankCat: x.bankCat, amount: x.amount, sig });
+        });
+      }
+    }
+    $("#toast").classList.remove("show");
+    if (!cands.length) { showToast("לא נמצאו עסקאות ₪ בקובץ", false); return; }
+    buildImportState(cands, foreign, canceled);
+    IMP.stepIdx = 0;
+    renderImportStep();
+  } catch (err) {
+    $("#toast").classList.remove("show");
+    showToast(err.message === "no-decompress" ? "הדפדפן לא תומך בקריאת Excel — נסה דפדפן עדכני" : "שגיאה בקריאת הקובץ", false);
+  }
+}
+function buildImportState(cands, foreign, canceled) {
+  cands.forEach((c) => { c.already = S.tx.some((t) => t.src === "bank" && t.sig === c.sig); });
+  cands.forEach((c) => {
+    if (c.already) return;
+    const ex = S.tx.find((t) => t.type === "expense" && t.src !== "bank" && sameYMD(t.ts, c.y, c.m, c.d) && Math.abs(t.amount - c.amount) <= 5);
+    if (ex) { c.dupOf = ex.id; c.dupExisting = ex; c.dupAction = "skip"; }
+  });
+  const distinctCats = [...new Set(cands.map((c) => c.bankCat))];
+  const catMap = {};
+  distinctCats.forEach((bc) => { const g = BANK_CAT_MAP[bc]; catMap[bc] = (g && S.categories.some((c) => c.id === g)) ? g : null; });
+  // the wizard steps are fixed once here (recomputing would shift as the user fills things in)
+  const steps = ["summary"];
+  if (Object.values(catMap).some((v) => !v)) steps.push("map");
+  if (cands.some((c) => !c.already && c.dupOf)) steps.push("dups");
+  steps.push("confirm");
+  IMP = { rows: cands, foreign, canceled, distinctCats, catMap, steps, stepIdx: 0 };
+}
+function importCount() {
+  return IMP.rows.filter((c) => !c.already && !(c.dupOf && c.dupAction === "skip")).length;
+}
+function monthBreakdown() {
+  const by = {};
+  IMP.rows.forEach((c) => {
+    if (c.already || (c.dupOf && c.dupAction === "skip")) return;
+    const k = `${c.y}-${c.m}`; by[k] = (by[k] || 0) + c.amount;
+  });
+  return Object.entries(by).sort((a, b) => a[0].localeCompare(b[0]));
+}
+function renderImportStep() {
+  const steps = IMP.steps, step = steps[IMP.stepIdx];
+  const stepLbl = `שלב ${IMP.stepIdx + 1}/${steps.length}`;
+  const catOpts = (sel) => S.categories.map((c) => `<option value="${c.id}" ${c.id === sel ? "selected" : ""}>${c.emoji} ${c.name}</option>`).join("");
+  let body = "";
+  if (step === "summary") {
+    const alreadyN = IMP.rows.filter((c) => c.already).length;
+    const dupN = IMP.rows.filter((c) => !c.already && c.dupOf).length;
+    body = `<div class="imp-step">${stepLbl} · סיכום</div><h3>ייבוא מהבנק</h3>
+      <div class="imp-months">${monthBreakdown().map(([k, v]) => { const [y, m] = k.split("-"); return `<div class="row spread"><span>${MONTHS[+m - 1]} ${y}</span><span class="num" style="font-weight:700">${fmt(v)}</span></div>`; }).join("") || `<div class="mut">אין עסקאות חדשות לייבוא</div>`}</div>
+      <p class="imp-note">✓ ${importCount()} עסקאות ייובאו${dupN ? `<br>⚠️ ${dupN} כפילויות אפשריות מול הדיווח שלך — נטפל בהמשך` : ""}${IMP.canceled ? `<br>↩️ ${IMP.canceled} ביטולים קוזזו אוטומטית` : ""}${IMP.foreign ? `<br>🌐 ${IMP.foreign} עסקאות מט"ח דולגו` : ""}${alreadyN ? `<br>♻️ ${alreadyN} כבר יובאו בעבר (דילוג)` : ""}</p>
+      <div class="btn-row"><button class="btn primary" id="imp-next">המשך</button><button class="btn" id="imp-cancel">ביטול</button></div>`;
+  } else if (step === "map") {
+    body = `<div class="imp-step">${stepLbl} · מיפוי קטגוריות</div><h3>לאיזו קטגוריה לשייך?</h3>
+      <p class="mut">בחר קטגוריה באפליקציה לכל קטגוריה מהבנק. הלא-מזוהות מסומנות.</p>
+      <div class="imp-scroll">${IMP.distinctCats.map((bc) => `<div class="imp-map-row"><span class="bc">${esc(bc)}</span>
+        <select data-bankcat="${esc(bc)}" class="${IMP.catMap[bc] ? "" : "need"}"><option value="">— בחר —</option>${catOpts(IMP.catMap[bc])}</select></div>`).join("")}</div>
+      <div class="btn-row"><button class="btn primary" id="imp-next">המשך</button><button class="btn" id="imp-back">חזור</button></div>`;
+  } else if (step === "dups") {
+    const dups = IMP.rows.filter((c) => !c.already && c.dupOf);
+    body = `<div class="imp-step">${stepLbl} · כפילויות</div><h3>כפילויות אפשריות (${dups.length})</h3>
+      <p class="mut">נראה שכבר דיווחת על אלה (אותו יום, סכום דומה). מה לעשות עם כל אחת?</p>
+      <div class="imp-scroll">${dups.map((c, i) => `<div class="imp-dup">
+        <div class="d-main">${c.d}.${c.m} · ${fmt(c.amount)} · ${esc(c.merch)}</div>
+        <div class="d-sub">הדיווח שלך: ${esc(catById(c.dupExisting.cat).name)} · ${fmt(c.dupExisting.amount)}</div>
+        <div class="seg" data-dupidx="${i}"><button data-act="skip" class="${c.dupAction === "skip" ? "on" : ""}">דלג על הבנק</button><button data-act="replace" class="${c.dupAction === "replace" ? "on" : ""}">מחק את שלי</button></div>
+      </div>`).join("")}</div>
+      <div class="btn-row"><button class="btn primary" id="imp-next">המשך</button><button class="btn" id="imp-back">חזור</button></div>`;
+  } else {
+    const repl = IMP.rows.filter((c) => c.dupOf && c.dupAction === "replace").length;
+    body = `<div class="imp-step">${stepLbl} · אישור</div><h3>אישור ייבוא</h3>
+      <div class="imp-months">${monthBreakdown().map(([k, v]) => { const [y, m] = k.split("-"); return `<div class="row spread"><span>${MONTHS[+m - 1]} ${y}</span><span class="num" style="font-weight:700">${fmt(v)}</span></div>`; }).join("")}</div>
+      <p class="imp-note">ייובאו <b>${importCount()}</b> עסקאות${repl ? `<br>🗑️ ${repl} דיווחים ידניים יימחקו (הוחלפו בעסקת הבנק)` : ""}</p>
+      <div class="btn-row"><button class="btn primary" id="imp-commit">ייבא ${importCount()} עסקאות</button><button class="btn" id="imp-back">חזור</button></div>`;
+  }
+  modal(body);
+  const nextBtn = $("#imp-next");
+  if (nextBtn) nextBtn.onclick = () => {
+    if (step === "map" && Object.values(IMP.catMap).some((v) => !v)) { showToast("צריך לבחור קטגוריה לכל שורה", false); return; }
+    IMP.stepIdx++; renderImportStep();
+  };
+  const backBtn = $("#imp-back"); if (backBtn) backBtn.onclick = () => { IMP.stepIdx--; renderImportStep(); };
+  const cancelBtn = $("#imp-cancel"); if (cancelBtn) cancelBtn.onclick = closeModal;
+  const commitBtn = $("#imp-commit"); if (commitBtn) commitBtn.onclick = commitImport;
+  document.querySelectorAll("#modal select[data-bankcat]").forEach((sel) => {
+    sel.onchange = () => { IMP.catMap[sel.dataset.bankcat] = sel.value || null; sel.classList.toggle("need", !sel.value); };
+  });
+  document.querySelectorAll("#modal .seg[data-dupidx]").forEach((seg) => {
+    seg.onclick = (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      const dups = IMP.rows.filter((c) => !c.already && c.dupOf);
+      dups[+seg.dataset.dupidx].dupAction = b.dataset.act;
+      seg.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
+    };
+  });
+}
+function commitImport() {
+  const firstCat = S.categories[0] ? S.categories[0].id : "other";
+  let added = 0;
+  IMP.rows.forEach((c) => {
+    if (c.already) return;
+    if (c.dupOf) {
+      if (c.dupAction === "skip") return;
+      S.tx = S.tx.filter((t) => t.id !== c.dupOf); // "replace": drop my manual report
+    }
+    const cat = IMP.catMap[c.bankCat] || firstCat;
+    const bucket = inWeekend(c.ts) ? "weekend" : "base";
+    S.tx.push({ id: uid(), type: "expense", amount: c.amount, cat, note: c.merch, ts: c.ts, bucket, src: "bank", sig: c.sig });
+    added++;
+  });
+  save(); closeModal(); render();
+  showToast(`יובאו ${added} עסקאות מהבנק ✓`, false);
+}
+$("#bank-import").addEventListener("click", () => $("#bank-file").click());
+$("#bank-file").addEventListener("change", (e) => { onBankFiles(e.target.files); e.target.value = ""; });
 
 /* ======================= smart reminders ======================= */
 /* True scheduled background push isn't reliable in an installed web app
