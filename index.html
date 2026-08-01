@@ -1181,15 +1181,17 @@ function renderWeekend() {
       }
     }
 
-    // top category
+    // top weekend category — one line: which category, its total, its share,
+    // and a saving hint when it dominates (merges the old duplicate tip line)
     const catSums = {};
     [...withData.flatMap((x) => x.txs), ...txs].forEach((t) => {
       catSums[t.cat || "other"] = (catSums[t.cat || "other"] || 0) + t.amount;
     });
+    const catTotal = Object.values(catSums).reduce((a, b) => a + b, 0);
     const top = Object.entries(catSums).sort((a, b) => b[1] - a[1])[0];
-    if (top) {
-      const c = catById(top[0]);
-      lines.push([c.emoji, `הכי הרבה כסף בסופ"שים הולך ל${c.name} (${fmt(top[1])} סה"כ)`]);
+    if (top && catTotal > 0) {
+      const c = catById(top[0]), share = Math.round(top[1] / catTotal * 100);
+      lines.push([c.emoji, `הכי הרבה בסופ"שים על ${c.name} — ${fmt(top[1])} (${share}%)${share >= 35 ? " · יעד טוב לחיסכון" : ""}`]);
     }
 
     // Budget adherence
@@ -1209,12 +1211,6 @@ function renderWeekend() {
     let streak = 0;
     for (const x of withData) { if (x.total <= budget) streak++; else break; }
     if (streak >= 2) lines.push(["🔥", `${streak} סופ"שים ברצף בתוך התקציב — כל הכבוד!`]);
-    // dominant-category lesson
-    const catTotal = Object.values(catSums).reduce((a, b) => a + b, 0);
-    if (top && catTotal > 0) {
-      const share = Math.round(top[1] / catTotal * 100);
-      if (share >= 35) lines.push(["🎓", `טיפ: ${catById(top[0]).name} תופס ${share}% מהוצאות הסופ"ש — יעד טוב לחיסכון`]);
-    }
     // night-spending lesson
     const allWkTx = [...withData.flatMap((x) => x.txs), ...txs];
     const nightWk = allWkTx.filter((t) => isNight(t.ts)).reduce((a, t) => a + t.amount, 0);
@@ -1379,9 +1375,9 @@ function renderMonth() {
     $("#m-dow").style.display = "none";
   }
 
-  // monthly recap (narrative) + spending patterns (stats)
-  renderRecap(m, prev, py, pm);
-  renderPatterns(m, dow, isThisMonth);
+  // monthly recap (this-month narrative) + all-time patterns
+  renderRecap(m);
+  renderPatterns();
 
   // categories (excludes travel — trips get their own budget breakdown)
   const catSums = {};
@@ -1531,8 +1527,11 @@ function renderMonthTx() {
   el.innerHTML = head + list.map(txItem).join("");
 }
 
-/* ---------- monthly recap: a short narrative summary of the month ---------- */
-function renderRecap(m, prev, py, pm) {
+/* ---------- monthly recap: a short narrative headline for the month ----------
+   Deliberately does NOT restate the month-over-month % (that's the compare line)
+   or the busiest category (that's the "לאן הלך הכסף" chart) — only facts unique
+   to this card: the savings headline, activity and the single biggest expense. */
+function renderRecap(m) {
   const el = $("#m-recap");
   const exp = m.reportedExp;
   if (!m.txs.length && !m.fixedIn && !m.fixedOut) { el.innerHTML = ""; el.style.display = "none"; return; }
@@ -1543,20 +1542,7 @@ function renderRecap(m, prev, py, pm) {
     ? (rate !== null ? `${rate}% מההכנסה נחסך החודש` : "נחסך החודש")
     : "גירעון החודש";
   const lines = [];
-  // verdict vs previous month (reported expenses)
-  if (prev.reportedOut > 0 && m.reportedOut > 0) {
-    const d = Math.round((m.reportedOut / prev.reportedOut - 1) * 100);
-    if (Math.abs(d) < 3) lines.push(["➖", `הוצאת בערך כמו ב${MONTHS[pm]}`]);
-    else if (d < 0) lines.push(["🎉", `החודש היה <b>${Math.abs(d)}% יותר כלכלי</b> מ${MONTHS[pm]}`]);
-    else lines.push(["📈", `הוצאת <b>${d}% יותר</b> מ${MONTHS[pm]}`]);
-  }
   if (exp.length) {
-    // busiest category
-    const catSums = {};
-    exp.forEach((t) => { catSums[t.cat || "other"] = (catSums[t.cat || "other"] || 0) + t.amount; });
-    const top = Object.entries(catSums).sort((a, b) => b[1] - a[1])[0];
-    const c = catById(top[0]);
-    lines.push([c.emoji, `הכי הרבה על <b>${esc(c.name)}</b> — ${fmt(top[1])}`]);
     // activity across active days
     const days = new Set(exp.map((t) => new Date(t.ts).toISOString().slice(0, 10))).size;
     lines.push(["🧾", `${exp.length} הוצאות ב-${days} ימים פעילים`]);
@@ -1568,46 +1554,56 @@ function renderRecap(m, prev, py, pm) {
     <div class="rc-title">🎊 סיכום ${MONTHS[mMonth]}</div>
     <div class="rc-hero ${net >= 0 ? "pos" : "neg"} num">${heroTxt}</div>
     <div class="rc-sub">${heroSub}</div>
-    <div class="rc-lines">${lines.map(([em, t]) => `<div class="rc-line"><span class="em">${em}</span><span>${t}</span></div>`).join("")}</div>
+    ${lines.length ? `<div class="rc-lines">${lines.map(([em, t]) => `<div class="rc-line"><span class="em">${em}</span><span>${t}</span></div>`).join("")}</div>` : ""}
   </div>`;
   el.style.display = "";
 }
 
-/* ---------- spending patterns: analytical stats for the month ---------- */
-function renderPatterns(m, dow, isThisMonth) {
+/* ---------- spending patterns: all-time analytical stats (not per-month) ---------- */
+function renderPatterns() {
   const el = $("#m-patterns");
-  const exp = m.reportedExp;
-  if (!exp.length) { el.innerHTML = ""; el.style.display = "none"; return; }
+  // all tracked spending except travel (kept separate everywhere in the app)
+  const exp = S.tx.filter((t) => t.type === "expense" && t.bucket !== "travel");
+  if (exp.length < 3) { el.innerHTML = ""; el.style.display = "none"; return; }
+  const total = sum(exp);
   const lines = [];
-  // average daily spend (elapsed days for the current month, full month otherwise)
-  const dim = new Date(mYear, mMonth + 1, 0).getDate();
-  const days = isThisMonth ? new Date().getDate() : dim;
-  lines.push(["📆", `הוצאה יומית ממוצעת: <b>${fmt(m.reportedOut / days)}</b>`]);
-  // most expensive weekday
+  // tracking span in months
+  const times = exp.map((t) => +new Date(t.ts));
+  const first = new Date(Math.min(...times)), last = new Date(Math.max(...times));
+  const monthSpan = Math.max(1, (last.getFullYear() - first.getFullYear()) * 12 + (last.getMonth() - first.getMonth()) + 1);
+  lines.push(["💰", `בסך הכל <b>${fmt(total)}</b> ב-${exp.length} תנועות · כ-<b>${fmt(total / monthSpan)}</b> בחודש`]);
+  // top category all-time
+  const catSums = {};
+  exp.forEach((t) => { catSums[t.cat || "other"] = (catSums[t.cat || "other"] || 0) + t.amount; });
+  const top = Object.entries(catSums).sort((a, b) => b[1] - a[1])[0];
+  if (top) {
+    const c = catById(top[0]), share = Math.round(top[1] / total * 100);
+    lines.push([c.emoji, `הקטגוריה הגדולה תמיד: <b>${esc(c.name)}</b> — ${fmt(top[1])} (${share}%)`]);
+  }
+  // most expensive weekday all-time
+  const dow = [0, 0, 0, 0, 0, 0, 0];
+  exp.forEach((t) => { dow[new Date(t.ts).getDay()] += t.amount; });
   const maxV = Math.max(...dow);
-  if (maxV > 0) lines.push(["📊", `היום ה"יקר" ביותר: <b>${DAY_NAMES[dow.indexOf(maxV)]}</b> (${fmt(maxV)})`]);
-  // average per transaction
-  lines.push(["🧮", `הוצאה ממוצעת לתנועה: <b>${fmt(m.reportedOut / exp.length)}</b> (${exp.length} תנועות)`]);
-  // comparison to trailing average (previous months with data)
-  const trailing = [];
-  for (let i = 1; i <= 6; i++) {
-    let yy = mYear, mm = mMonth - i; while (mm < 0) { mm += 12; yy--; }
-    const v = monthTotals(yy, mm).reportedOut; if (v > 0) trailing.push(v);
+  if (maxV > 0) lines.push(["📊", `היום ה"יקר" ביותר בשבוע: <b>${DAY_NAMES[dow.indexOf(maxV)]}</b>`]);
+  // average per transaction all-time
+  lines.push(["🧮", `הוצאה ממוצעת לתנועה: <b>${fmt(total / exp.length)}</b>`]);
+  // priciest month ever (only meaningful once there is more than one month)
+  const byMonth = {};
+  exp.forEach((t) => { const d = new Date(t.ts); byMonth[`${d.getFullYear()}-${d.getMonth()}`] = (byMonth[`${d.getFullYear()}-${d.getMonth()}`] || 0) + t.amount; });
+  if (Object.keys(byMonth).length > 1) {
+    const tm = Object.entries(byMonth).sort((a, b) => b[1] - a[1])[0];
+    const [yy, mm] = tm[0].split("-").map(Number);
+    lines.push(["📅", `החודש היקר ביותר: <b>${MONTHS[mm]} ${yy}</b> (${fmt(tm[1])})`]);
   }
-  if (trailing.length >= 2) {
-    const avg = trailing.reduce((a, b) => a + b, 0) / trailing.length;
-    const d = Math.round((m.reportedOut / avg - 1) * 100);
-    if (Math.abs(d) >= 5) lines.push([d > 0 ? "🔺" : "🔻", `${d > 0 ? "מעל" : "מתחת"} הממוצע האחרון ב-<b>${Math.abs(d)}%</b> (${fmt(avg)})`]);
-    else lines.push(["⚖️", `קרוב לממוצע החודשים האחרונים (${fmt(avg)})`]);
-  }
-  // night spending share
+  // night-spending share all-time
   const nightSum = exp.filter((t) => isNight(t.ts)).reduce((a, t) => a + t.amount, 0);
   if (nightSum > 0) {
-    const pct = Math.round(nightSum / m.reportedOut * 100);
-    if (pct >= 10) lines.push(["🌙", `${pct}% מההוצאות היו בלילה (22:00–06:00)`]);
+    const pct = Math.round(nightSum / total * 100);
+    if (pct >= 10) lines.push(["🌙", `${pct}% מכל ההוצאות היו בלילה (22:00–06:00)`]);
   }
   el.innerHTML = `<div class="card">
-    <h3 style="font-size:15px">💡 דפוסים ותובנות</h3>
+    <h3 style="font-size:15px">💡 דפוסים ותובנות · כל הזמן</h3>
+    <p class="mut" style="margin:-2px 0 6px">מאז ${first.getDate()}.${first.getMonth() + 1}.${String(first.getFullYear()).slice(2)} · ${monthSpan} חודשים במעקב</p>
     ${lines.map(([em, t]) => `<div class="pattern-line"><span class="em">${em}</span><span>${t}</span></div>`).join("")}
   </div>`;
   el.style.display = "";
