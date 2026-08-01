@@ -628,7 +628,6 @@ h2 { font-weight: 800; }
   <div class="kpis" id="m-kpis"></div>
   <div id="m-compare"></div>
   <div id="m-recap"></div>
-  <div class="card" id="m-travel"></div>
   <div class="card" id="m-budget"></div>
   <div class="card" id="m-weekend-share"></div>
   <div class="card">
@@ -746,6 +745,7 @@ h2 { font-weight: 800; }
     </div>
     <p class="mut" id="reminders-note" style="margin:6px 0 0"></p>
   </div>
+  <div class="card" id="m-travel"></div>
   <div class="card">
     <h3 style="font-size:15px">ייבוא מהבנק</h3>
     <p class="mut">ייבוא קובץ Excel של פירוט עסקאות (כרטיס אשראי) — למילוי חודשים שלא דיווחת. העסקאות נכנסות לפי תאריך העסקה.</p>
@@ -1533,9 +1533,6 @@ function renderMonth() {
       <span class="tx-amt num ${f.type === "income" ? "in" : ""}">${f.type === "income" ? "+" : "-"}${fmt2(f.amount)}</span>
     </div>`).join("") : `<div class="empty">אין קבועות עדיין - הוסף משכורת, שכ"ד, מנויים</div>`;
 
-  // travel mode
-  renderTravel();
-
   // month tx list (with search + filter)
   renderMonthTx();
 }
@@ -1968,6 +1965,7 @@ function openWeekendDetailsModal(weekendId) {
 
 /* ============================== settings ============================= */
 function renderSettings() {
+  renderTravel(); // travel mode lives in settings — kept out of the way until needed
   $("#set-budget").value = S.settings.weekendBudget;
   $("#set-monthly").value = S.settings.monthlyBudget || 0;
   $("#set-savings-goal").value = S.settings.savingsGoal || 0;
