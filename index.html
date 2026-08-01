@@ -543,6 +543,16 @@ h2 { font-weight: 800; }
 .imp-dup .seg button { flex: 1; font-size: 12px; padding: 5px 6px; }
 .imp-step { font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .3px; margin-bottom: 2px; }
 
+/* ---------- category breakdown card (month ⇄ all-time) ---------- */
+.seg.mini { margin: 0; padding: 2px; }
+.seg.mini button { padding: 3px 11px; font-size: 12px; }
+.cat-row { cursor: pointer; border-radius: 8px; transition: background .12s; }
+.cat-row:active { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.bar-amt .bar-pct { display: block; font-size: 10px; color: var(--muted); font-weight: 600; margin-top: -1px; }
+.cat-total { padding-top: 9px; margin-top: 5px; border-top: 1px solid var(--grid); }
+.tag-sub { font-size: 10px; font-weight: 700; color: var(--accent); white-space: nowrap;
+  background: color-mix(in srgb, var(--accent) 12%, transparent); padding: 1px 6px; border-radius: 999px; }
+
 /* ---------- compact report layout for short phones (e.g. iPhone SE) ----------
    Keeps the whole entry flow — amount, quick amounts, categories, keypad —
    above the tab bar without scrolling on shorter viewports. */
@@ -622,7 +632,13 @@ h2 { font-weight: 800; }
   <div class="card" id="m-budget"></div>
   <div class="card" id="m-weekend-share"></div>
   <div class="card">
-    <h3 style="font-size:15px">לאן הלך הכסף</h3>
+    <div class="row spread" style="margin-bottom:6px">
+      <h3 style="font-size:15px">לאן הלך הכסף</h3>
+      <div class="seg mini" id="cats-scope">
+        <button data-scope="month" class="on">החודש</button>
+        <button data-scope="all">כל הזמן</button>
+      </div>
+    </div>
     <div id="m-cats"></div>
   </div>
 
@@ -642,7 +658,7 @@ h2 { font-weight: 800; }
 
   <section class="collapse" id="c-patterns">
     <button class="collapse-head" aria-expanded="false">
-      <span class="ch-title">💡 דפוסים ותובנות</span>
+      <span class="ch-title">💡 חיסכון ובקרה</span>
       <span class="chev" aria-hidden="true">⌄</span>
     </button>
     <div class="collapse-body"><div id="m-patterns"></div></div>
@@ -1381,7 +1397,7 @@ const esc = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">
 
 /* ============================= month screen ========================== */
 let mYear, mMonth;
-let txQuery = "", txFilter = "all";
+let txQuery = "", txFilter = "all", catScope = "month";
 { const n = new Date(); mYear = n.getFullYear(); mMonth = n.getMonth(); }
 const MONTHS = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
 
@@ -1504,20 +1520,8 @@ function renderMonth() {
   renderRecap(m);
   renderPatterns();
 
-  // categories (excludes travel — trips get their own budget breakdown)
-  const catSums = {};
-  m.reportedExp.forEach((t) => {
-    catSums[t.cat || "other"] = (catSums[t.cat || "other"] || 0) + t.amount;
-  });
-  const entries = Object.entries(catSums).sort((a, b) => b[1] - a[1]);
-  const max = entries.length ? entries[0][1] : 0;
-  $("#m-cats").innerHTML = entries.length ? entries.map(([id, v]) => {
-    const c = catById(id);
-    return `<div class="bar-row">
-      <span class="bar-label">${c.emoji} ${c.name}</span>
-      <span class="bar-track"><span class="bar-fill" style="width:${max ? v / max * 100 : 0}%;background:${catColor(id)}"></span></span>
-      <span class="bar-amt num">${fmt(v)}</span></div>`;
-  }).join("") : `<div class="empty">אין הוצאות מדווחות החודש</div>`;
+  // per-category breakdown (month / all-time toggle)
+  renderCatsBreakdown();
 
   // fixed list
   $("#fixed-meta").textContent = S.fixed.length ? `${S.fixed.length}` : "";
@@ -1534,6 +1538,54 @@ function renderMonth() {
 
   // month tx list (with search + filter)
   renderMonthTx();
+}
+
+/* ---------- per-category breakdown: viewed month or all-time ---------- */
+function reportedExpenses(all) {
+  const base = S.tx.filter((t) => t.type === "expense" && t.bucket !== "travel");
+  return all ? base : base.filter((t) => { const d = new Date(t.ts); return d.getFullYear() === mYear && d.getMonth() === mMonth; });
+}
+function renderCatsBreakdown() {
+  const all = catScope === "all";
+  const exp = reportedExpenses(all);
+  const total = sum(exp);
+  const catSums = {};
+  exp.forEach((t) => { catSums[t.cat || "other"] = (catSums[t.cat || "other"] || 0) + t.amount; });
+  const entries = Object.entries(catSums).sort((a, b) => b[1] - a[1]);
+  const max = entries.length ? entries[0][1] : 0;
+  // months tracked (for the /month average shown in all-time mode)
+  let span = 1;
+  if (all && exp.length) {
+    const ts = exp.map((t) => +new Date(t.ts));
+    const f = new Date(Math.min(...ts)), l = new Date(Math.max(...ts));
+    span = Math.max(1, (l.getFullYear() - f.getFullYear()) * 12 + (l.getMonth() - f.getMonth()) + 1);
+  }
+  $("#m-cats").innerHTML = entries.length
+    ? entries.map(([id, v]) => {
+        const c = catById(id), pct = total ? Math.round(v / total * 100) : 0;
+        const sub = all ? `${pct}% · ${fmt(v / span)}/ח׳` : `${pct}%`;
+        return `<div class="bar-row cat-row" data-catrow="${id}">
+          <span class="bar-label">${c.emoji} ${esc(c.name)}</span>
+          <span class="bar-track"><span class="bar-fill" style="width:${max ? v / max * 100 : 0}%;background:${catColor(id)}"></span></span>
+          <span class="bar-amt num">${fmt(v)}<span class="bar-pct">${sub}</span></span></div>`;
+      }).join("") + `<div class="row spread cat-total"><span class="mut">סה"כ${all ? ` · ${span} חודשים` : ""}</span><span class="num" style="font-weight:800">${fmt(total)}</span></div>`
+    : `<div class="empty">אין הוצאות ${all ? "עדיין" : "מדווחות החודש"}</div>`;
+}
+$("#cats-scope").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  catScope = b.dataset.scope;
+  document.querySelectorAll("#cats-scope button").forEach((x) => x.classList.toggle("on", x === b));
+  renderCatsBreakdown();
+});
+/* drill into a single category's transactions (respecting the current scope) */
+function openCatTxModal(id) {
+  const c = catById(id), all = catScope === "all";
+  const list = reportedExpenses(all).filter((t) => (t.cat || "other") === id).sort((a, b) => b.ts.localeCompare(a.ts));
+  modal(`<h3>${c.emoji} ${esc(c.name)} · ${all ? "כל הזמן" : MONTHS[mMonth] + " " + mYear}</h3>
+    <div class="row spread" style="margin-bottom:4px"><span class="mut">${list.length} תנועות</span><span class="num" style="font-weight:800">${fmt(sum(list))}</span></div>
+    <div class="imp-scroll">${list.length ? list.map(txItem).join("") : `<div class="empty">אין תנועות</div>`}</div>
+    <div class="btn-row"><button class="btn" id="ct-close">סגירה</button></div>`);
+  $("#ct-close").onclick = closeModal;
 }
 
 /* ---------- travel mode card ---------- */
@@ -1686,89 +1738,62 @@ function renderRecap(m) {
   el.style.display = "";
 }
 
-/* ---------- spending patterns: all-time analytical stats (not per-month) ---------- */
+/* ---------- saving & control: recurring/subscriptions + ranked saving levers ----------
+   Focused on decisions, not trivia: what repeats (leaks) and where cutting saves the most.
+   The raw per-category breakdown lives in the "לאן הלך הכסף" card, so it isn't repeated here. */
 function renderPatterns() {
-  const el = $("#m-patterns");
-  const wrap = $("#c-patterns");
-  // all tracked spending except travel (kept separate everywhere in the app)
+  const el = $("#m-patterns"), wrap = $("#c-patterns");
   const exp = S.tx.filter((t) => t.type === "expense" && t.bucket !== "travel");
   if (exp.length < 3) { el.innerHTML = ""; wrap.style.display = "none"; return; }
   wrap.style.display = "";
   const total = sum(exp);
-  const lines = [];
-  // tracking span in months
   const times = exp.map((t) => +new Date(t.ts));
   const first = new Date(Math.min(...times)), last = new Date(Math.max(...times));
   const monthSpan = Math.max(1, (last.getFullYear() - first.getFullYear()) * 12 + (last.getMonth() - first.getMonth()) + 1);
-  lines.push(["💰", `בסך הכל <b>${fmt(total)}</b> ב-${exp.length} תנועות · כ-<b>${fmt(total / monthSpan)}</b> בחודש`]);
-  // top category all-time
-  const catSums = {};
-  exp.forEach((t) => { catSums[t.cat || "other"] = (catSums[t.cat || "other"] || 0) + t.amount; });
-  const top = Object.entries(catSums).sort((a, b) => b[1] - a[1])[0];
-  if (top) {
-    const c = catById(top[0]), share = Math.round(top[1] / total * 100);
-    lines.push([c.emoji, `הקטגוריה הגדולה תמיד: <b>${esc(c.name)}</b> — ${fmt(top[1])} (${share}%)`]);
-  }
-  // most expensive weekday all-time
-  const dow = [0, 0, 0, 0, 0, 0, 0];
-  exp.forEach((t) => { dow[new Date(t.ts).getDay()] += t.amount; });
-  const maxV = Math.max(...dow);
-  if (maxV > 0) lines.push(["📊", `היום ה"יקר" ביותר בשבוע: <b>${DAY_NAMES[dow.indexOf(maxV)]}</b>`]);
-  // average per transaction all-time
-  lines.push(["🧮", `הוצאה ממוצעת לתנועה: <b>${fmt(total / exp.length)}</b>`]);
-  // priciest month ever (only meaningful once there is more than one month)
-  const byMonth = {};
-  exp.forEach((t) => { const d = new Date(t.ts); byMonth[`${d.getFullYear()}-${d.getMonth()}`] = (byMonth[`${d.getFullYear()}-${d.getMonth()}`] || 0) + t.amount; });
-  if (Object.keys(byMonth).length > 1) {
-    const tm = Object.entries(byMonth).sort((a, b) => b[1] - a[1])[0];
-    const [yy, mm] = tm[0].split("-").map(Number);
-    lines.push(["📅", `החודש היקר ביותר: <b>${MONTHS[mm]} ${yy}</b> (${fmt(tm[1])})`]);
-  }
-  // night-spending share all-time
-  const nightSum = exp.filter((t) => isNight(t.ts)).reduce((a, t) => a + t.amount, 0);
-  if (nightSum > 0) {
-    const pct = Math.round(nightSum / total * 100);
-    if (pct >= 10) lines.push(["🌙", `${pct}% מכל ההוצאות היו בלילה (22:00–06:00)`]);
-  }
 
-  // recurring merchants across the months (by note — mostly from bank import)
+  // group by merchant (note) — the basis for both recurring detection and the "nibble" lever
   const byNote = {};
   exp.forEach((t) => {
     const k = (t.note || "").trim(); if (!k) return;
     const d = new Date(t.ts);
-    (byNote[k] || (byNote[k] = { n: 0, sum: 0, months: new Set() }));
-    byNote[k].n++; byNote[k].sum += t.amount; byNote[k].months.add(`${d.getFullYear()}-${d.getMonth()}`);
+    (byNote[k] || (byNote[k] = { n: 0, sum: 0, months: new Set(), amts: [] }));
+    byNote[k].n++; byNote[k].sum += t.amount; byNote[k].months.add(`${d.getFullYear()}-${d.getMonth()}`); byNote[k].amts.push(t.amount);
   });
-  const recurring = Object.entries(byNote)
-    .filter(([, v]) => v.months.size >= 3 || v.n >= 4)
-    .sort((a, b) => b[1].sum - a[1].sum).slice(0, 5);
-  const recLines = recurring.map(([name, v]) =>
-    ["🔁", `<b>${esc(name)}</b> — ${v.n}× ב-${v.months.size} חודשים · ${fmt(v.sum)} (ממוצע ${fmt(v.sum / v.n)})`]);
+  // a "subscription" repeats a near-constant amount across most months
+  const isSub = (v) => {
+    if (v.months.size < 3) return false;
+    const avg = v.sum / v.n, near = v.amts.filter((x) => Math.abs(x - avg) <= Math.max(1, avg * 0.1)).length;
+    return near >= v.n * 0.7;
+  };
+  const recurring = Object.entries(byNote).filter(([, v]) => v.months.size >= 3 || v.n >= 4).sort((a, b) => b[1].sum - a[1].sum);
+  const recLines = recurring.slice(0, 4).map(([name, v]) =>
+    ["🔁", `<b>${esc(name)}</b> — ${v.n}× ב-${v.months.size} חודשים · <b>${fmt(v.sum)}</b>${isSub(v) ? ` <span class="tag-sub">מנוי? ~${fmt(v.sum / v.months.size)}/ח׳</span>` : ` <span class="mut">(~${fmt(v.sum / monthSpan)}/ח׳)</span>`}`]);
 
-  // where can I save
-  const saveLines = [];
+  // ranked saving levers — biggest impact first
+  const catSums = {};
+  exp.forEach((t) => { catSums[t.cat || "other"] = (catSums[t.cat || "other"] || 0) + t.amount; });
+  const levers = [];
+  const top = Object.entries(catSums).sort((a, b) => b[1] - a[1])[0];
   if (top) {
     const c = catById(top[0]), perMonth = top[1] / monthSpan;
-    saveLines.push(["✂️", `<b>${esc(c.name)}</b> היא ההוצאה הגדולה (~${fmt(perMonth)} בחודש). קיצוץ 15% = חיסכון ~<b>${fmt(perMonth * 0.15)}</b> בחודש`]);
+    levers.push(["✂️", `<b>${esc(c.name)}</b> — ~${fmt(perMonth)}/ח׳ (${Math.round(top[1] / total * 100)}% מההוצאות). קיצוץ 15% חוסך ~<b>${fmt(perMonth * 0.15)}</b>/ח׳`]);
   }
-  // a frequent small buy that quietly adds up
-  const nibble = Object.entries(byNote).filter(([, v]) => v.n >= 5).sort((a, b) => b[1].sum - a[1].sum)[0];
+  const subs = recurring.filter(([, v]) => isSub(v));
+  const subMonthly = subs.reduce((a, [, v]) => a + v.sum / v.months.size, 0);
+  if (subMonthly > 0) levers.push(["📌", `מנויים/חוזרות קבועות: ~<b>${fmt(subMonthly)}</b>/ח׳ — עבור עליהם ובטל מה שלא בשימוש`]);
+  const nibble = Object.entries(byNote).filter(([, v]) => v.n >= 5 && !isSub(v)).sort((a, b) => b[1].sum - a[1].sum)[0];
   if (nibble) {
     const [name, v] = nibble;
-    saveLines.push(["☕", `<b>${esc(name)}</b>: ${v.n} קניות קטנות בממוצע ${fmt(v.sum / v.n)} — הצטברו ל-<b>${fmt(v.sum)}</b>`]);
-  }
-  if (nightSum > total * 0.15) {
-    saveLines.push(["🌙", `הרבה מההוצאות בלילה (${fmt(nightSum)} סה"כ) — לרוב פחות מתוכננות, יעד טוב לצמצום`]);
+    levers.push(["☕", `<b>${esc(name)}</b> — ${v.n} קניות קטנות שהצטברו ל-<b>${fmt(v.sum)}</b> (~${fmt(v.sum / monthSpan)}/ח׳)`]);
   }
 
   const section = (title, arr) => arr.length
     ? `<h4 class="sub-h">${title}</h4>${arr.map(([em, t]) => `<div class="pattern-line"><span class="em">${em}</span><span>${t}</span></div>`).join("")}`
     : "";
   el.innerHTML = `
-    <p class="mut" style="margin:0 0 6px">מאז ${first.getDate()}.${first.getMonth() + 1}.${String(first.getFullYear()).slice(2)} · ${monthSpan} חודשים במעקב</p>
-    ${lines.map(([em, t]) => `<div class="pattern-line"><span class="em">${em}</span><span>${t}</span></div>`).join("")}
-    ${section("🔁 הוצאות חוזרות", recLines)}
-    ${section("✂️ איפה אפשר לחסוך", saveLines)}`;
+    <p class="mut" style="margin:0 0 8px">מאז ${first.getDate()}.${first.getMonth() + 1}.${String(first.getFullYear()).slice(2)} · ${monthSpan} חודשים · סה"כ ${fmt(total)} (~${fmt(total / monthSpan)}/ח׳)</p>
+    ${section("🔁 חוזרות ומנויים", recLines) || `<p class="mut">עדיין אין מספיק נתונים לזיהוי חוזרות</p>`}
+    ${section("✂️ איפה הכי קל לחסוך", levers)}`;
 }
 
 /* ======================== edit modals (tx/fixed/cat) ================= */
@@ -1780,6 +1805,8 @@ document.body.addEventListener("click", (e) => {
   if (fxEl) { openFixedModal(fxEl.dataset.fixed); return; }
   const wkEl = e.target.closest("[data-weekend]");
   if (wkEl) { openWeekendDetailsModal(wkEl.dataset.weekend); return; }
+  const crEl = e.target.closest("[data-catrow]");
+  if (crEl) { openCatTxModal(crEl.dataset.catrow); return; }
 });
 
 /* collapsible sections: tap the header to expand/collapse */
