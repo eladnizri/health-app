@@ -514,20 +514,6 @@ h2 { font-weight: 800; }
 .sub-h:first-child { margin-top: 2px; }
 #m-patterns .pattern-line:first-child { padding-top: 2px; }
 
-/* ---------- yearly heatmap ---------- */
-.heatmap { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
-.heatmap::-webkit-scrollbar { display: none; }
-.hm-grid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 11px);
-  gap: 3px; direction: ltr; width: max-content; }
-.hm-cell { width: 11px; height: 11px; border-radius: 2.5px; background: var(--ring-track); }
-.hm-cell.l1 { background: color-mix(in srgb, var(--accent) 28%, var(--ring-track)); }
-.hm-cell.l2 { background: color-mix(in srgb, var(--accent) 52%, transparent); }
-.hm-cell.l3 { background: color-mix(in srgb, var(--accent) 76%, transparent); }
-.hm-cell.l4 { background: var(--accent); }
-.hm-legend { display: flex; align-items: center; gap: 4px; justify-content: flex-end;
-  margin-top: 6px; font-size: 10.5px; color: var(--muted); direction: ltr; }
-.hm-legend .hm-cell { width: 10px; height: 10px; }
-
 /* ---------- swipe a transaction row: one way deletes, the other edits ---------- */
 .tx-item[data-tx] { position: relative; touch-action: pan-y; }
 .tx-item[data-tx].swiping { will-change: transform; }
@@ -651,8 +637,6 @@ h2 { font-weight: 800; }
       <div id="m-dow-chart"></div>
       <h4 class="sub-h">מגמה חודשית</h4>
       <div id="m-chart"></div>
-      <h4 class="sub-h">מפת חום — שנה אחרונה</h4>
-      <div id="m-heatmap"></div>
     </div>
   </section>
 
@@ -1516,9 +1500,6 @@ function renderMonth() {
     ? vbars([6, 5, 4, 3, 2, 1, 0].map((i) => ({ label: DAY_SHORT[i], value: Math.round(dow[i]), over: false })), 0)
     : `<div class="chart-empty">אין הוצאות מדווחות החודש</div>`;
 
-  // year heatmap (all-time, independent of the viewed month)
-  renderHeatmap();
-
   // monthly recap (this-month narrative) + all-time patterns
   renderRecap(m);
   renderPatterns();
@@ -1749,40 +1730,45 @@ function renderPatterns() {
     const pct = Math.round(nightSum / total * 100);
     if (pct >= 10) lines.push(["🌙", `${pct}% מכל ההוצאות היו בלילה (22:00–06:00)`]);
   }
+
+  // recurring merchants across the months (by note — mostly from bank import)
+  const byNote = {};
+  exp.forEach((t) => {
+    const k = (t.note || "").trim(); if (!k) return;
+    const d = new Date(t.ts);
+    (byNote[k] || (byNote[k] = { n: 0, sum: 0, months: new Set() }));
+    byNote[k].n++; byNote[k].sum += t.amount; byNote[k].months.add(`${d.getFullYear()}-${d.getMonth()}`);
+  });
+  const recurring = Object.entries(byNote)
+    .filter(([, v]) => v.months.size >= 3 || v.n >= 4)
+    .sort((a, b) => b[1].sum - a[1].sum).slice(0, 5);
+  const recLines = recurring.map(([name, v]) =>
+    ["🔁", `<b>${esc(name)}</b> — ${v.n}× ב-${v.months.size} חודשים · ${fmt(v.sum)} (ממוצע ${fmt(v.sum / v.n)})`]);
+
+  // where can I save
+  const saveLines = [];
+  if (top) {
+    const c = catById(top[0]), perMonth = top[1] / monthSpan;
+    saveLines.push(["✂️", `<b>${esc(c.name)}</b> היא ההוצאה הגדולה (~${fmt(perMonth)} בחודש). קיצוץ 15% = חיסכון ~<b>${fmt(perMonth * 0.15)}</b> בחודש`]);
+  }
+  // a frequent small buy that quietly adds up
+  const nibble = Object.entries(byNote).filter(([, v]) => v.n >= 5).sort((a, b) => b[1].sum - a[1].sum)[0];
+  if (nibble) {
+    const [name, v] = nibble;
+    saveLines.push(["☕", `<b>${esc(name)}</b>: ${v.n} קניות קטנות בממוצע ${fmt(v.sum / v.n)} — הצטברו ל-<b>${fmt(v.sum)}</b>`]);
+  }
+  if (nightSum > total * 0.15) {
+    saveLines.push(["🌙", `הרבה מההוצאות בלילה (${fmt(nightSum)} סה"כ) — לרוב פחות מתוכננות, יעד טוב לצמצום`]);
+  }
+
+  const section = (title, arr) => arr.length
+    ? `<h4 class="sub-h">${title}</h4>${arr.map(([em, t]) => `<div class="pattern-line"><span class="em">${em}</span><span>${t}</span></div>`).join("")}`
+    : "";
   el.innerHTML = `
     <p class="mut" style="margin:0 0 6px">מאז ${first.getDate()}.${first.getMonth() + 1}.${String(first.getFullYear()).slice(2)} · ${monthSpan} חודשים במעקב</p>
-    ${lines.map(([em, t]) => `<div class="pattern-line"><span class="em">${em}</span><span>${t}</span></div>`).join("")}`;
-}
-
-/* ---------- year heatmap: daily reported spend over the last ~53 weeks ---------- */
-function renderHeatmap() {
-  const el = $("#m-heatmap");
-  const exp = S.tx.filter((t) => t.type === "expense" && t.bucket !== "travel");
-  if (!exp.length) { el.innerHTML = `<div class="chart-empty">אין עדיין נתונים</div>`; return; }
-  const key = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const daily = {};
-  exp.forEach((t) => { const d = new Date(t.ts); daily[key(d)] = (daily[key(d)] || 0) + t.amount; });
-  // window: the Sunday on/before (today − 363) … today
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const start = new Date(today); start.setDate(start.getDate() - 363);
-  start.setDate(start.getDate() - start.getDay());
-  // intensity thresholds from nonzero days (quartiles)
-  const vals = Object.values(daily).filter((v) => v > 0).sort((a, b) => a - b);
-  const q = (p) => vals.length ? vals[Math.min(vals.length - 1, Math.floor(p * vals.length))] : 0;
-  const t1 = q(0.25), t2 = q(0.5), t3 = q(0.75);
-  const level = (v) => v <= 0 ? 0 : v <= t1 ? 1 : v <= t2 ? 2 : v <= t3 ? 3 : 4;
-  const cells = [];
-  for (const cur = new Date(start); cur <= today; cur.setDate(cur.getDate() + 1)) {
-    const v = daily[key(cur)] || 0, lv = level(v);
-    const label = `${cur.getDate()}.${cur.getMonth() + 1}${v > 0 ? ": " + fmt(v) : ""}`;
-    cells.push(`<div class="hm-cell${lv ? " l" + lv : ""}" title="${label}"></div>`);
-  }
-  el.innerHTML = `<div class="heatmap" data-noswipe><div class="hm-grid">${cells.join("")}</div></div>
-    <div class="hm-legend"><span>פחות</span>
-      <span class="hm-cell"></span><span class="hm-cell l1"></span><span class="hm-cell l2"></span>
-      <span class="hm-cell l3"></span><span class="hm-cell l4"></span><span>יותר</span></div>`;
-  const hm = el.querySelector(".heatmap");
-  if (hm) hm.scrollLeft = hm.scrollWidth; // start at the most recent weeks
+    ${lines.map(([em, t]) => `<div class="pattern-line"><span class="em">${em}</span><span>${t}</span></div>`).join("")}
+    ${section("🔁 הוצאות חוזרות", recLines)}
+    ${section("✂️ איפה אפשר לחסוך", saveLines)}`;
 }
 
 /* ======================== edit modals (tx/fixed/cat) ================= */
@@ -1802,7 +1788,6 @@ document.body.addEventListener("click", (e) => {
   const c = head.closest(".collapse");
   const open = c.classList.toggle("open");
   head.setAttribute("aria-expanded", open ? "true" : "false");
-  if (open) { const hm = c.querySelector(".heatmap"); if (hm) hm.scrollLeft = hm.scrollWidth; }
 });
 
 /* swipe a transaction row: swipe left → delete (with undo), swipe right → edit */
@@ -2118,6 +2103,24 @@ const BANK_CAT_MAP = {
   "מסעדות, קפה וברים": "eat", "מזון וצריכה": "market", "פנאי, בידור וספורט": "fun",
   "דלק, חשמל וגז": "fuel", "תחבורה ורכבים": "fuel", "אופנה": "shop", "חשמל ומחשבים": "shop",
 };
+/* merchants that always belong to the "שק״ם" category (canteen / vending) */
+const SHAKAM_RX = /כוורת|חלבי|מכונות אוטומ|אייס/;
+function ensureShakam() {
+  let c = S.categories.find((x) => /^שק/.test(x.name));
+  if (!c) { c = { id: "shakam", name: "שק״ם", emoji: "🥤" }; S.categories.push(c); }
+  return c.id;
+}
+/* enforce the שק״ם rule on existing expenses (keeps already-imported data in sync) */
+function applyShakamRule() {
+  let id = null, changed = false;
+  S.tx.forEach((t) => {
+    if (t.type === "expense" && t.note && SHAKAM_RX.test(t.note)) {
+      if (id === null) id = ensureShakam();
+      if (t.cat !== id) { t.cat = id; changed = true; }
+    }
+  });
+  if (changed) save();
+}
 const colIndex = (letters) => { let n = 0; for (const ch of letters) n = n * 26 + (ch.charCodeAt(0) - 64); return n - 1; };
 const sameYMD = (iso, y, m, d) => { const t = new Date(iso); return t.getFullYear() === y && t.getMonth() + 1 === m && t.getDate() === d; };
 
@@ -2276,9 +2279,10 @@ function renderImportStep() {
   if (step === "summary") {
     const alreadyN = IMP.rows.filter((c) => c.already).length;
     const dupN = IMP.rows.filter((c) => !c.already && c.dupOf).length;
+    const shakamN = IMP.rows.filter((c) => !c.already && SHAKAM_RX.test(c.merch)).length;
     body = `<div class="imp-step">${stepLbl} · סיכום</div><h3>ייבוא מהבנק</h3>
       <div class="imp-months">${monthBreakdown().map(([k, v]) => { const [y, m] = k.split("-"); return `<div class="row spread"><span>${MONTHS[+m - 1]} ${y}</span><span class="num" style="font-weight:700">${fmt(v)}</span></div>`; }).join("") || `<div class="mut">אין עסקאות חדשות לייבוא</div>`}</div>
-      <p class="imp-note">✓ ${importCount()} עסקאות ייובאו${dupN ? `<br>⚠️ ${dupN} כפילויות אפשריות מול הדיווח שלך — נטפל בהמשך` : ""}${IMP.canceled ? `<br>↩️ ${IMP.canceled} ביטולים קוזזו אוטומטית` : ""}${IMP.foreign ? `<br>🌐 ${IMP.foreign} עסקאות מט"ח דולגו` : ""}${alreadyN ? `<br>♻️ ${alreadyN} כבר יובאו בעבר (דילוג)` : ""}</p>
+      <p class="imp-note">✓ ${importCount()} עסקאות ייובאו${dupN ? `<br>⚠️ ${dupN} כפילויות אפשריות מול הדיווח שלך — נטפל בהמשך` : ""}${shakamN ? `<br>🥤 ${shakamN} עסקאות סווגו אוטומטית כשק״ם` : ""}${IMP.canceled ? `<br>↩️ ${IMP.canceled} ביטולים קוזזו אוטומטית` : ""}${IMP.foreign ? `<br>🌐 ${IMP.foreign} עסקאות מט"ח דולגו` : ""}${alreadyN ? `<br>♻️ ${alreadyN} כבר יובאו בעבר (דילוג)` : ""}</p>
       <div class="btn-row"><button class="btn primary" id="imp-next">המשך</button><button class="btn" id="imp-cancel">ביטול</button></div>`;
   } else if (step === "map") {
     body = `<div class="imp-step">${stepLbl} · מיפוי קטגוריות</div><h3>לאיזו קטגוריה לשייך?</h3>
@@ -2333,7 +2337,7 @@ function commitImport() {
       if (c.dupAction === "skip") return;
       S.tx = S.tx.filter((t) => t.id !== c.dupOf); // "replace": drop my manual report
     }
-    const cat = IMP.catMap[c.bankCat] || firstCat;
+    const cat = SHAKAM_RX.test(c.merch) ? ensureShakam() : (IMP.catMap[c.bankCat] || firstCat);
     const bucket = inWeekend(c.ts) ? "weekend" : "base";
     S.tx.push({ id: uid(), type: "expense", amount: c.amount, cat, note: c.merch, ts: c.ts, bucket, src: "bank", sig: c.sig });
     added++;
@@ -2396,6 +2400,7 @@ function render() {
 }
 syncBucketButtons();
 updateRepeatButton();
+applyShakamRule(); // route כוורת / חלביה / מכונות אוטומטיות to the שק״ם category
 save(); // persist any one-time data migrations (e.g. retired "other" bucket) so backups stay clean
 render();
 
