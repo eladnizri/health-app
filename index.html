@@ -4,8 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>הכסף שלי</title>
-<meta name="theme-color" content="#f9f9f7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#090d16">
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -13,40 +12,27 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>
-/* ---------- palette roles (light) + dark below ---------- */
+/* ---------- palette: deep-navy dark by default; light is opt-in ---------- */
 :root {
-  color-scheme: light;
-  --page: #f9f9f7; --surface: #fcfcfb;
-  --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
-  --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,.10);
-  --good: #0ca30c; --warn: #fab219; --crit: #d03b3b;
-  --good-text: #006300;
-  --accent: #2a78d6;
-  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4; --c6:#008300;
-  --ring-track: #e1e0d9;
-}
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) {
-    color-scheme: dark;
-    --page: #0d0d0d; --surface: #1a1a19;
-    --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
-    --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,.10);
-    --good-text: #0ca30c;
-    --accent: #3987e5;
-    --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300;
-    --ring-track: #2c2c2a;
-  }
-}
-/* explicit theme toggle (e.g. claude.ai artifact viewer) wins both ways */
-:root[data-theme="dark"] {
   color-scheme: dark;
-  --page: #0d0d0d; --surface: #1a1a19;
-  --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
-  --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,.10);
-  --good-text: #0ca30c;
-  --accent: #3987e5;
-  --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300;
-  --ring-track: #2c2c2a;
+  --page: #090d16; --surface: #141b2b; --surface-2: #1b2436;
+  --ink: #eef2fa; --ink-2: #a7b0c4; --muted: #6b768d;
+  --grid: #222c40; --baseline: #2b3550; --border: rgba(255,255,255,.07);
+  --good: #22c55e; --warn: #f5b942; --crit: #f2555a; --good-text: #3ad07f;
+  --accent: #3b82f6; --accent-bright: #6ea3ff;
+  --c1:#3b82f6; --c2:#f2555a; --c3:#22c55e; --c4:#f5b942; --c5:#a78bfa; --c6:#2dd4bf;
+  --ring-track: #232c42;
+}
+/* explicit light theme (system-light users still get the navy look, to match) */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --page: #f4f6fb; --surface: #ffffff; --surface-2: #eef2f9;
+  --ink: #0e1626; --ink-2: #48526a; --muted: #8a93a7;
+  --grid: #e6eaf2; --baseline: #c9d0de; --border: rgba(14,22,38,.10);
+  --good: #12a150; --warn: #c98a12; --crit: #e0484d; --good-text: #0a7d3c;
+  --accent: #2f6df0; --accent-bright: #2f6df0;
+  --c1:#2f6df0; --c2:#e0484d; --c3:#12a150; --c4:#c98a12; --c5:#8b5cf6; --c6:#0d9488;
+  --ring-track: #e6eaf2;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; }
@@ -59,8 +45,8 @@ body {
 }
 h1,h2,h3 { margin: 0; }
 button { font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
-input, select { font: inherit; color: var(--ink); background: var(--page);
-  border: 1px solid var(--baseline); border-radius: 10px; padding: 9px 12px; max-width: 100%; }
+input, select { font: inherit; color: var(--ink); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; max-width: 100%; }
 input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .num { font-variant-numeric: tabular-nums; }
 
@@ -258,11 +244,10 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 
 /* ===================== professional / statistical polish ===================== */
 body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
-:root { --shadow: 0 1px 2px rgba(16,24,40,.04), 0 6px 16px rgba(16,24,40,.06);
-        --shadow-sm: 0 1px 2px rgba(16,24,40,.05); --radius: 18px; }
-@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) {
-  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.5); --shadow-sm: 0 1px 2px rgba(0,0,0,.4); } }
-:root[data-theme="dark"] { --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.5); --shadow-sm: 0 1px 2px rgba(0,0,0,.4); }
+:root { --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 24px -8px rgba(0,0,0,.55);
+        --shadow-sm: 0 1px 2px rgba(0,0,0,.35); --radius: 22px; }
+:root[data-theme="light"] { --shadow: 0 1px 2px rgba(16,24,40,.05), 0 8px 20px -8px rgba(16,24,40,.12);
+        --shadow-sm: 0 1px 2px rgba(16,24,40,.06); }
 
 .card { border-radius: var(--radius); box-shadow: var(--shadow); }
 .card h3 { font-size: 14px; font-weight: 700; letter-spacing: .1px; }
@@ -366,17 +351,14 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
    tab bar on short phones.
    ============================================================================ */
 :root {
-  --grad-accent: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 68%, #16235a));
-  --shadow: 0 1px 1px rgba(16,24,40,.03), 0 2px 6px rgba(16,24,40,.05), 0 12px 28px -10px rgba(16,24,40,.10);
-  --shadow-sm: 0 1px 2px rgba(16,24,40,.06);
-  --ring-glow: rgba(16,24,40,.10);
+  --grad-accent: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, #7c4dff));
+  --shadow: 0 1px 1px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.45), 0 18px 36px -14px rgba(0,0,0,.65);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4); --ring-glow: rgba(0,0,0,.55);
 }
-@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) {
-  --shadow: 0 1px 1px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.45), 0 16px 32px -12px rgba(0,0,0,.6);
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.5); --ring-glow: rgba(0,0,0,.5); } }
-:root[data-theme="dark"] {
-  --shadow: 0 1px 1px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.45), 0 16px 32px -12px rgba(0,0,0,.6);
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.5); --ring-glow: rgba(0,0,0,.5); }
+:root[data-theme="light"] {
+  --shadow: 0 1px 1px rgba(16,24,40,.03), 0 2px 6px rgba(16,24,40,.05), 0 12px 28px -10px rgba(16,24,40,.10);
+  --shadow-sm: 0 1px 2px rgba(16,24,40,.06); --ring-glow: rgba(16,24,40,.10);
+}
 
 /* soft depth behind the page */
 body { background:
@@ -389,10 +371,10 @@ h2 { font-weight: 800; }
 .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 
 /* cards: hairline top highlight for a crisp, layered feel */
-.card { position: relative; border-color: color-mix(in srgb, var(--border) 70%, transparent);
+.card { position: relative; border-color: color-mix(in srgb, var(--border) 90%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 90%, #fff 4%), var(--surface)); }
+:root[data-theme="light"] .card {
   background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 97%, #fff), var(--surface)); }
-@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .card {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, #fff 3%), var(--surface)); } }
 .card > h3:first-child::before { background: var(--grad-accent); opacity: 1; width: 3.5px; height: 15px;
   box-shadow: 0 0 8px -1px color-mix(in srgb, var(--accent) 60%, transparent); }
 
@@ -409,10 +391,15 @@ h2 { font-weight: 800; }
   transition: transform .08s ease, box-shadow .15s ease, filter .15s ease; }
 .btn.primary:active, .save-income:active { transform: translateY(1px); filter: brightness(.96); }
 
-/* selected segment / type toggle → gradient chip */
+/* segmented controls → dark track with a lifted navy-blue pill (health-app style) */
+.seg, .type-toggle, .bucket-seg { background: color-mix(in srgb, var(--page) 55%, var(--surface));
+  border-color: color-mix(in srgb, var(--border) 90%, transparent); }
 .type-toggle button.on, .seg button.on, .bucket-seg button.on, .chip.on {
-  background: var(--grad-accent); border-color: transparent;
-  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--accent) 50%, transparent); }
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface));
+  color: var(--accent-bright); border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+  box-shadow: 0 1px 3px rgba(0,0,0,.35); font-weight: 700; }
+.chip.on { color: #fff; background: var(--grad-accent); }
+.bucket-seg button[data-bucket="travel"].on { background: color-mix(in srgb, #a78bfa 24%, var(--surface)); color: #c9b6ff; border-color: color-mix(in srgb, #a78bfa 40%, transparent); }
 
 /* progress meters & bars → refined track + gradient vbars */
 .meter, .bs-bar { background: color-mix(in srgb, var(--ink) 8%, transparent); }
@@ -571,6 +558,11 @@ h2 { font-weight: 800; }
 .cat-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
   margin-inline-end: 6px; flex: none; vertical-align: middle; }
 
+/* ---------- screen header (big title + muted subtitle), health-app style ---------- */
+.scr-head { display: flex; align-items: flex-start; justify-content: space-between; margin: 4px 2px 14px; }
+.scr-head .h-title { font-size: 25px; font-weight: 800; letter-spacing: -.5px; line-height: 1.1; }
+.scr-head .h-sub { font-size: 13.5px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+
 /* ---------- compact report layout for short phones (e.g. iPhone SE) ----------
    Keeps the whole entry flow — amount, quick amounts, categories, keypad —
    above the tab bar without scrolling on shorter viewports. */
@@ -625,7 +617,7 @@ h2 { font-weight: 800; }
 
 <!-- ================= WEEKEND ================= -->
 <section id="s-weekend" class="screen">
-  <h2 style="font-size:19px;margin:6px 2px">סופי שבוע</h2>
+  <div class="scr-head"><div><div class="h-title">סופי שבוע</div><div class="h-sub">תקציב והוצאות</div></div></div>
   <div class="card" id="wk-current"></div>
   <div class="card">
     <h3 style="font-size:15px">מגמת הוצאות סופ"ש</h3>
@@ -638,6 +630,7 @@ h2 { font-weight: 800; }
 
 <!-- ================= MONTH ================= -->
 <section id="s-month" class="screen">
+  <div class="scr-head"><div><div class="h-title">החודש שלי</div><div class="h-sub">סיכום והוצאות</div></div></div>
   <div class="month-nav">
     <button id="m-prev">‹</button>
     <div class="cur-month" id="m-label"></div>
@@ -719,7 +712,7 @@ h2 { font-weight: 800; }
 
 <!-- ================= SETTINGS ================= -->
 <section id="s-settings" class="screen">
-  <h2 style="font-size:19px;margin:6px 2px">הגדרות</h2>
+  <div class="scr-head"><div><div class="h-title">הגדרות</div><div class="h-sub">התאמה אישית</div></div></div>
   <div class="card">
     <div class="set-row">
       <label>תקציב סופ"ש (₪)</label>
