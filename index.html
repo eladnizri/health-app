@@ -84,7 +84,8 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 .ring-wrap svg { transform: rotate(-90deg); }
 .ring-val { position: absolute; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; }
-.ring-val .amt { font-size: 21px; font-weight: 800; }
+.ring-val { max-width: 88px; }
+.ring-val .amt { font-size: 21px; font-weight: 800; white-space: nowrap; }
 .ring-val .lbl { font-size: 10.5px; color: var(--muted); margin-top: -3px; }
 .status-main { flex: 1; min-width: 0; }
 .status-title { font-size: 16px; font-weight: 700; display: flex; gap: 6px; align-items: center; }
@@ -547,9 +548,17 @@ h2 { font-weight: 800; }
 .imp-dup .seg button { flex: 1; font-size: 12px; padding: 5px 6px; }
 .imp-step { font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .3px; margin-bottom: 2px; }
 
+/* ---------- inline line-icons (replace decorative emojis) ---------- */
+.lico { display: inline-flex; align-items: center; vertical-align: -3px; color: var(--ink-2); }
+.lico svg { width: 15px; height: 15px; }
+.ch-title .lico, .status-title .lico, .sub-h .lico, .card > h3 .lico, .h-title .lico { color: var(--accent); }
+.rc-title .lico { color: var(--accent-bright); }
+
 /* ---------- category breakdown card (month ⇄ all-time) ---------- */
-.seg.mini { margin: 0; padding: 2px; }
-.seg.mini button { padding: 3px 11px; font-size: 12px; }
+.cats-head { display: flex; align-items: center; justify-content: space-between; gap: 8px 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.cats-head h3 { flex: 0 1 auto; }
+.seg.sm { flex: 0 0 auto; width: auto; margin: 0; padding: 2px; }
+.seg.sm button { flex: 0 0 auto; white-space: nowrap; padding: 4px 12px; font-size: 12px; }
 .cat-row { cursor: pointer; border-radius: 8px; transition: background .12s; }
 .cat-row:active { background: color-mix(in srgb, var(--accent) 7%, transparent); }
 .bar-amt .bar-pct { display: block; font-size: 10px; color: var(--muted); font-weight: 600; margin-top: -1px; }
@@ -676,9 +685,9 @@ h2 { font-weight: 800; }
   <div class="card" id="m-budget"></div>
   <div class="card" id="m-weekend-share"></div>
   <div class="card">
-    <div class="row spread" style="margin-bottom:6px">
+    <div class="cats-head">
       <h3 style="font-size:15px">לאן הלך הכסף</h3>
-      <div class="seg mini" id="cats-scope">
+      <div class="seg sm" id="cats-scope">
         <button data-scope="month" class="on">החודש</button>
         <button data-scope="all">כל הזמן</button>
       </div>
@@ -689,7 +698,7 @@ h2 { font-weight: 800; }
   <!-- collapsed by default: the professional depth -->
   <section class="collapse" id="c-graphs">
     <button class="collapse-head" aria-expanded="false">
-      <span class="ch-title">📈 גרפים</span>
+      <span class="ch-title"><span class="lico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5v14h16"/><path d="M7 14l3-3 3 2 4-6"/></svg></span> גרפים</span>
       <span class="chev" aria-hidden="true">⌄</span>
     </button>
     <div class="collapse-body">
@@ -702,7 +711,7 @@ h2 { font-weight: 800; }
 
   <section class="collapse" id="c-patterns">
     <button class="collapse-head" aria-expanded="false">
-      <span class="ch-title">💡 חיסכון ובקרה</span>
+      <span class="ch-title"><span class="lico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 18h5M10.5 21h3"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5.9 1 1 1.7h5.2c.1-.7.4-1.2 1-1.7A6 6 0 0 0 12 3Z"/></svg></span> חיסכון ובקרה</span>
       <span class="chev" aria-hidden="true">⌄</span>
     </button>
     <div class="collapse-body"><div id="m-patterns"></div></div>
@@ -710,7 +719,7 @@ h2 { font-weight: 800; }
 
   <section class="collapse" id="c-fixed">
     <button class="collapse-head" aria-expanded="false">
-      <span class="ch-title">🔁 קבועות חודשיות</span>
+      <span class="ch-title"><span class="lico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9a8 8 0 0 1 13-3l2.5 2.5M20 5.5V9h-3.5"/><path d="M20 15a8 8 0 0 1-13 3l-2.5-2.5M4 18.5V15h3.5"/></svg></span> קבועות חודשיות</span>
       <span class="ch-meta" id="fixed-meta"></span>
       <span class="chev" aria-hidden="true">⌄</span>
     </button>
@@ -725,7 +734,7 @@ h2 { font-weight: 800; }
 
   <section class="collapse" id="c-tx">
     <button class="collapse-head" aria-expanded="false">
-      <span class="ch-title">🧾 כל התנועות</span>
+      <span class="ch-title"><span class="lico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h11M8 12h11M8 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg></span> כל התנועות</span>
       <span class="ch-meta" id="tx-meta"></span>
       <span class="chev" aria-hidden="true">⌄</span>
     </button>
@@ -1290,6 +1299,11 @@ function ringSvg(frac, color) {
       stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/>
   </svg>`;
 }
+/* pick a font size so the amount always fits inside the budget ring */
+function ringAmtSize(str) {
+  const n = (str || "").length;
+  return n <= 4 ? 22 : n === 5 ? 19 : n === 6 ? 16.5 : n === 7 ? 14.5 : 13;
+}
 /* small metric ring (72px) for the month "מדדים" row */
 function miniRingSvg(frac, color) {
   const r = 30, c = 2 * Math.PI * r;
@@ -1313,6 +1327,34 @@ const IC_SAVE = svgIco(`<path d="M12 3v9m0 0l-3-3m3 3l3-3"/><path d="M5 14v3a1.6
 const IC_TARGET = svgIco(`<circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="3.4"/>`);
 const IC_SUN = svgIco(`<circle cx="12" cy="12" r="3.8"/><path d="M12 3v2M12 19v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M3 12h2M19 12h2M4.6 19.4l1.4-1.4M18 6l1.4-1.4"/>`);
 const IC_REPEAT = svgIco(`<path d="M4 9a8 8 0 0 1 13-3l2.5 2.5M20 5.5V9h-3.5"/><path d="M20 15a8 8 0 0 1-13 3l-2.5-2.5M4 18.5V15h3.5"/>`);
+/* inline line-icon set used in place of decorative emojis in headers/insights */
+const ICO = {
+  chart:  `<path d="M4 5v14h16"/><path d="M7 14l3-3 3 2 4-6"/>`,
+  bulb:   `<path d="M9.5 18h5M10.5 21h3"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5.9 1 1 1.7h5.2c.1-.7.4-1.2 1-1.7A6 6 0 0 0 12 3Z"/>`,
+  repeat: `<path d="M4 9a8 8 0 0 1 13-3l2.5 2.5M20 5.5V9h-3.5"/><path d="M20 15a8 8 0 0 1-13 3l-2.5-2.5M4 18.5V15h3.5"/>`,
+  list:   `<path d="M8 6h11M8 12h11M8 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>`,
+  target: `<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.3"/>`,
+  sun:    `<circle cx="12" cy="12" r="3.8"/><path d="M12 3v2M12 19v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M3 12h2M19 12h2M4.6 19.4l1.4-1.4M18 6l1.4-1.4"/>`,
+  cal:    `<rect x="4" y="5" width="16" height="16" rx="2.5"/><path d="M4 9.5h16M8 3v4M16 3v4"/>`,
+  plane:  `<path d="M11 4.2a1.4 1.4 0 0 1 2.5 0l1.6 5 5 1.7a.9.9 0 0 1 0 1.7l-5 1.7-1.6 5a1.4 1.4 0 0 1-2.5 0l-1.2-3.8-3.6-.2 1-1.8-2.8-1.5 4.4-1 1.8-3.4z"/>`,
+  scissors:`<circle cx="6" cy="6" r="2.3"/><circle cx="6" cy="18" r="2.3"/><path d="M8 7.4L20 16M8 16.6L20 8"/>`,
+  spark:  `<path d="M12 3l1.7 4.6L18 9l-4.3 1.4L12 15l-1.7-4.6L6 9l4.3-1.4z"/><path d="M18.5 15l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z"/>`,
+  trendUp:`<path d="M4 5v14h16"/><path d="M7 13l3-3 3 2 4-5"/><path d="M15 7h3v3"/>`,
+  trendDn:`<path d="M4 5v14h16"/><path d="M7 9l3 3 3-2 4 5"/><path d="M15 15h3v-3"/>`,
+  scale:  `<path d="M12 4v16M7 20h10"/><path d="M6 8h12M6 8l-2.4 5a2.7 2.7 0 0 0 4.8 0zM18 8l-2.4 5a2.7 2.7 0 0 0 4.8 0z"/>`,
+  fire:   `<path d="M12 3c2.5 3.5 4.3 5.5 4.3 8.4a4.3 4.3 0 0 1-8.6 0c0-1 .4-1.9 1.1-2.6.3.9.9 1.3 1.5 1.5C9.8 8.4 12 6.5 12 3Z"/>`,
+  moon:   `<path d="M20 13.5A8 8 0 1 1 10.5 4a6.5 6.5 0 0 0 9.5 9.5Z"/>`,
+  coin:   `<circle cx="12" cy="12" r="8"/><path d="M12 8v8M13.8 9.4A2.2 1.7 0 0 0 11.8 8C10.6 8 9.9 8.6 9.9 9.5c0 1.9 4.2 1 4.2 2.9 0 .9-.8 1.5-1.9 1.5a2.2 1.7 0 0 1-2.2-1.5"/>`,
+  burst:  `<path d="M12 2.6l1.5 4 3.8-2-1 4.2 4.2.9-3.2 2.7 2.8 3.2-4.2-.6.4 4.2-3.4-2.5L12 21.4l-2.3-3.6-3.4 2.5.4-4.2-4.2.6 2.8-3.2-3.2-2.7 4.2-.9-1-4.2 3.8 2z"/>`,
+  pin:    `<path d="M9 3.5h6l-1 5.4 3 2.4v1.4H7v-1.4l3-2.4-1-5.4Z"/><path d="M12 12.7V21"/>`,
+  coffee: `<path d="M4 8h12v4.4A4.4 4.4 0 0 1 11.6 17H8.4A4.4 4.4 0 0 1 4 12.6Z"/><path d="M16 9h2.4a2 2 0 0 1 0 4H16"/><path d="M7 3.6v1.5M10.5 3.6v1.5"/>`,
+  bars:   `<path d="M5 20V11M12 20V5M19 20v-7"/><path d="M4 20h16"/>`,
+  tag:    `<path d="M4 12.8V5.2A1.2 1.2 0 0 1 5.2 4h7.6l7.2 7.2a1.2 1.2 0 0 1 0 1.7l-6.1 6.1a1.2 1.2 0 0 1-1.7 0z"/><circle cx="8.4" cy="8.4" r="1.3"/>`,
+  info:   `<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/>`,
+  award:  `<circle cx="12" cy="9" r="5"/><path d="M9 13.4L8 21l4-2 4 2-1-7.6"/>`,
+  save:   `<path d="M12 3v9m0 0l-3-3m3 3l3-3"/><path d="M5 14v3a1.6 1.6 0 0 0 1.6 1.6h10.8A1.6 1.6 0 0 0 19 17v-3"/>`,
+};
+const ico = (name) => `<span class="lico">${svgIco(ICO[name] || ICO.info)}</span>`;
 /* month "מדדים" row — four at-a-glance ratio rings */
 function renderMetrics(m) {
   const el = $("#m-metrics"); if (!el) return;
@@ -1370,7 +1412,7 @@ function renderWeekend() {
   $("#wk-current").innerHTML = `
     <div class="status-card" style="margin-bottom:10px">
       <div class="ring-wrap">${ringSvg(frac, ringColor)}
-        <div class="ring-val"><span class="amt num" style="color:${ringColor}">${fmt(Math.abs(left))}</span>
+        <div class="ring-val"><span class="amt num" style="color:${ringColor};font-size:${ringAmtSize(fmt(Math.abs(left)))}px">${fmt(Math.abs(left))}</span>
         <span class="lbl">${left >= 0 ? "נשארו" : "חריגה"}</span></div>
       </div>
       <div class="status-main">
@@ -1411,10 +1453,10 @@ function renderWeekend() {
     // Comparison to average
     if (spent > 0 && avg > 0) {
       const d = Math.round((spent / avg - 1) * 100);
-      lines.push(d >= 10 ? ["📈", `הסופ"ש הזה יקר ב-${d}% מהממוצע שלך (${fmt(avg)})`]
-        : d <= -10 ? ["📉", `הסופ"ש הזה חסכוני ב-${Math.abs(d)}% מהממוצע שלך (${fmt(avg)})`]
-        : ["⚖️", `הסופ"ש הזה קרוב לממוצע שלך (${fmt(avg)})`]);
-    } else lines.push(["Ø", `ממוצע סופ"ש: ${fmt(avg)} (על בסיס ${withData.length} סופ"שים)`]);
+      lines.push(d >= 10 ? [ico("trendUp"), `הסופ"ש הזה יקר ב-${d}% מהממוצע שלך (${fmt(avg)})`]
+        : d <= -10 ? [ico("trendDn"), `הסופ"ש הזה חסכוני ב-${Math.abs(d)}% מהממוצע שלך (${fmt(avg)})`]
+        : [ico("scale"), `הסופ"ש הזה קרוב לממוצע שלך (${fmt(avg)})`]);
+    } else lines.push([ico("chart"), `ממוצע סופ"ש: ${fmt(avg)} (על בסיס ${withData.length} סופ"שים)`]);
 
     // Overspend alert / projection for current weekend
     if (isLive && budget > 0 && txs.length > 0) {
@@ -1423,7 +1465,7 @@ function renderWeekend() {
       const daysPassed = (now - w.start) / (24 * 60 * 60 * 1000);
       const projectedEnd = spent / daysPassed * daysInWk;
       if (projectedEnd > budget * 1.15) {
-        lines.push(["⚠️", `בקצב הזה תחרוג מהתקציב ב-${fmt(projectedEnd - budget)} בקרוב`]);
+        lines.push([ico("info"), `בקצב הזה תחרוג מהתקציב ב-${fmt(projectedEnd - budget)} בקרוב`]);
       }
     }
 
@@ -1443,26 +1485,26 @@ function renderWeekend() {
     // Budget adherence
     const okCount = withData.filter((x) => x.total <= budget).length;
     const pct = Math.round(okCount / withData.length * 100);
-    lines.push(["🎯", `עמדת בתקציב ב-${pct}% מהסופ"שים (${okCount}/${withData.length})`]);
+    lines.push([ico("target"), `עמדת בתקציב ב-${pct}% מהסופ"שים (${okCount}/${withData.length})`]);
 
     // Best performing weekend hint
     const bestWeekend = withData.reduce((a, b) => a.total < b.total ? a : b);
     const savings = Math.round((1 - bestWeekend.total / avg) * 100);
     if (savings > 5) {
-      lines.push(["💡", `הסופ"ש הכי חסכוני שלך היה ב-${savings}% מהממוצע — אתה יכול!`]);
+      lines.push([ico("award"), `הסופ"ש הכי חסכוני שלך היה ב-${savings}% מהממוצע — אתה יכול!`]);
     }
 
     // ---- lessons & tips ----
     // in-budget streak (most recent consecutive within-budget weekends)
     let streak = 0;
     for (const x of withData) { if (x.total <= budget) streak++; else break; }
-    if (streak >= 2) lines.push(["🔥", `${streak} סופ"שים ברצף בתוך התקציב — כל הכבוד!`]);
+    if (streak >= 2) lines.push([ico("fire"), `${streak} סופ"שים ברצף בתוך התקציב — כל הכבוד!`]);
     // night-spending lesson
     const allWkTx = [...withData.flatMap((x) => x.txs), ...txs];
     const nightWk = allWkTx.filter((t) => isNight(t.ts)).reduce((a, t) => a + t.amount, 0);
     const allWkSum = allWkTx.reduce((a, t) => a + t.amount, 0);
     if (allWkSum > 0 && nightWk / allWkSum >= 0.15) {
-      lines.push(["🌙", `כ-${Math.round(nightWk / allWkSum * 100)}% מהוצאות הסופ"ש בלילה — לרוב פחות מתוכננות`]);
+      lines.push([ico("moon"), `כ-${Math.round(nightWk / allWkSum * 100)}% מהוצאות הסופ"ש בלילה — לרוב פחות מתוכננות`]);
     }
 
     box.innerHTML = `<h3 style="font-size:15px;margin-bottom:4px">תובנות</h3>` +
@@ -1588,11 +1630,11 @@ function renderMonth() {
     $("#m-budget").innerHTML = `
       <div class="status-card">
         <div class="ring-wrap">${ringSvg(frac, color)}
-          <div class="ring-val"><span class="amt num" style="color:${color}">${fmt(Math.abs(left))}</span>
+          <div class="ring-val"><span class="amt num" style="color:${color};font-size:${ringAmtSize(fmt(Math.abs(left)))}px">${fmt(Math.abs(left))}</span>
           <span class="lbl">${left >= 0 ? "נשארו" : "חריגה"}</span></div>
         </div>
         <div class="status-main">
-          <div class="status-title">🎯 תקציב חודשי</div>
+          <div class="status-title">${ico("target")} תקציב חודשי</div>
           <div class="sub num" style="margin-top:4px">${fmt(m.reportedOut)} מתוך ${fmt(mb)}</div>
           <span class="badge ${left >= 0 ? "ok" : "over"}">${left >= 0 ? "✓ בתקציב" : "✗ חריגה"}</span>
           ${proj}
@@ -1605,10 +1647,10 @@ function renderMonth() {
 
   // where the reported money went: weekend / general / other / travel split
   $("#m-weekend-share").innerHTML = `
-    <div class="row spread"><span class="sub">🌅 סופ"שים</span><span class="num" style="font-weight:700">${fmt(m.weekendOut)}${m.reportedOut ? ` <span class="mut">(${Math.round(m.weekendOut / m.reportedOut * 100)}%)</span>` : ""}</span></div>
-    <div class="row spread" style="margin-top:5px"><span class="sub">📅 כללי</span><span class="num" style="font-weight:700">${fmt(m.baseOut)}</span></div>
-    ${m.otherOut ? `<div class="row spread" style="margin-top:5px"><span class="sub">🏷️ אחר</span><span class="num" style="font-weight:700">${fmt(m.otherOut)}</span></div>` : ""}
-    ${m.travelOut ? `<div class="row spread" style="margin-top:5px"><span class="sub">✈️ טיולים</span><span class="num" style="font-weight:700">${fmt(m.travelOut)}</span></div>` : ""}`;
+    <div class="row spread"><span class="sub">${ico("sun")} סופ"שים</span><span class="num" style="font-weight:700">${fmt(m.weekendOut)}${m.reportedOut ? ` <span class="mut">(${Math.round(m.weekendOut / m.reportedOut * 100)}%)</span>` : ""}</span></div>
+    <div class="row spread" style="margin-top:5px"><span class="sub">${ico("cal")} כללי</span><span class="num" style="font-weight:700">${fmt(m.baseOut)}</span></div>
+    ${m.otherOut ? `<div class="row spread" style="margin-top:5px"><span class="sub">${ico("tag")} אחר</span><span class="num" style="font-weight:700">${fmt(m.otherOut)}</span></div>` : ""}
+    ${m.travelOut ? `<div class="row spread" style="margin-top:5px"><span class="sub">${ico("plane")} טיולים</span><span class="num" style="font-weight:700">${fmt(m.travelOut)}</span></div>` : ""}`;
 
   // monthly trend: reported expenses per month, last 6 months ending at viewed month
   const trend = [];
@@ -1707,7 +1749,7 @@ function renderTravel() {
     const started = new Date(trip.start);
     el.innerHTML = `
       <div class="row spread" style="margin-bottom:6px">
-        <span class="sub" style="font-weight:800">✈️ ${esc(trip.name)}</span>
+        <span class="sub" style="font-weight:800">${ico("plane")} ${esc(trip.name)}</span>
         <span class="badge ok" style="border-color:var(--good)">מצב טיול פעיל</span>
       </div>
       <div class="travel-figures">
@@ -1724,7 +1766,7 @@ function renderTravel() {
   } else if (past.length) {
     el.innerHTML = `
       <div class="row spread" style="margin-bottom:4px">
-        <h3 style="font-size:15px">✈️ טיולים</h3>
+        <h3 style="font-size:15px">${ico("plane")} טיולים</h3>
         <button class="btn primary" id="trip-start">התחל טיול</button>
       </div>` +
       past.slice(0, 4).map((t) => {
@@ -1740,7 +1782,7 @@ function renderTravel() {
   } else {
     el.innerHTML = `
       <div class="row spread">
-        <div><h3 style="font-size:15px">✈️ מצב טיול</h3>
+        <div><h3 style="font-size:15px">${ico("plane")} מצב טיול</h3>
           <p class="mut" style="margin:2px 0 0">תקציב נפרד לחופשה — הוצאות הטיול לא מתערבבות בחודשי</p></div>
       </div>
       <div class="btn-row" style="margin-top:10px"><button class="btn primary" id="trip-start">התחל טיול</button></div>`;
@@ -1831,13 +1873,13 @@ function renderRecap(m) {
   if (exp.length) {
     // activity across active days
     const days = new Set(exp.map((t) => new Date(t.ts).toISOString().slice(0, 10))).size;
-    lines.push(["🧾", `${exp.length} הוצאות ב-${days} ימים פעילים`]);
+    lines.push([ico("list"), `${exp.length} הוצאות ב-${days} ימים פעילים`]);
     // biggest single expense
     const big = exp.reduce((a, b) => a.amount > b.amount ? a : b);
-    lines.push(["💥", `ההוצאה הגדולה: <b>${fmt(big.amount)}</b> · ${esc(catById(big.cat).name)}`]);
+    lines.push([ico("burst"), `ההוצאה הגדולה: <b>${fmt(big.amount)}</b> · ${esc(catById(big.cat).name)}`]);
   }
   el.innerHTML = `<div class="card recap-card">
-    <div class="rc-title">🎊 סיכום ${MONTHS[mMonth]}</div>
+    <div class="rc-title">${ico("spark")} סיכום ${MONTHS[mMonth]}</div>
     <div class="rc-hero count ${net >= 0 ? "pos" : "neg"} num" data-to="${Math.abs(net)}" data-prefix="${net >= 0 ? "+" : "-"}">${heroTxt}</div>
     <div class="rc-sub">${heroSub}</div>
     ${lines.length ? `<div class="rc-lines">${lines.map(([em, t]) => `<div class="rc-line"><span class="em">${em}</span><span>${t}</span></div>`).join("")}</div>` : ""}
@@ -1874,7 +1916,7 @@ function renderPatterns() {
   };
   const recurring = Object.entries(byNote).filter(([, v]) => v.months.size >= 3 || v.n >= 4).sort((a, b) => b[1].sum - a[1].sum);
   const recLines = recurring.slice(0, 4).map(([name, v]) =>
-    ["🔁", `<b>${esc(name)}</b> — ${v.n}× ב-${v.months.size} חודשים · <b>${fmt(v.sum)}</b>${isSub(v) ? ` <span class="tag-sub">מנוי? ~${fmt(v.sum / v.months.size)}/ח׳</span>` : ` <span class="mut">(~${fmt(v.sum / monthSpan)}/ח׳)</span>`}`]);
+    [ico("repeat"), `<b>${esc(name)}</b> — ${v.n}× ב-${v.months.size} חודשים · <b>${fmt(v.sum)}</b>${isSub(v) ? ` <span class="tag-sub">מנוי? ~${fmt(v.sum / v.months.size)}/ח׳</span>` : ` <span class="mut">(~${fmt(v.sum / monthSpan)}/ח׳)</span>`}`]);
 
   // ranked saving levers — biggest impact first
   const catSums = {};
@@ -1883,15 +1925,15 @@ function renderPatterns() {
   const top = Object.entries(catSums).sort((a, b) => b[1] - a[1])[0];
   if (top) {
     const c = catById(top[0]), perMonth = top[1] / monthSpan;
-    levers.push(["✂️", `<b>${esc(c.name)}</b> — ~${fmt(perMonth)}/ח׳ (${Math.round(top[1] / total * 100)}% מההוצאות). קיצוץ 15% חוסך ~<b>${fmt(perMonth * 0.15)}</b>/ח׳`]);
+    levers.push([ico("scissors"), `<b>${esc(c.name)}</b> — ~${fmt(perMonth)}/ח׳ (${Math.round(top[1] / total * 100)}% מההוצאות). קיצוץ 15% חוסך ~<b>${fmt(perMonth * 0.15)}</b>/ח׳`]);
   }
   const subs = recurring.filter(([, v]) => isSub(v));
   const subMonthly = subs.reduce((a, [, v]) => a + v.sum / v.months.size, 0);
-  if (subMonthly > 0) levers.push(["📌", `מנויים/חוזרות קבועות: ~<b>${fmt(subMonthly)}</b>/ח׳ — עבור עליהם ובטל מה שלא בשימוש`]);
+  if (subMonthly > 0) levers.push([ico("pin"), `מנויים/חוזרות קבועות: ~<b>${fmt(subMonthly)}</b>/ח׳ — עבור עליהם ובטל מה שלא בשימוש`]);
   const nibble = Object.entries(byNote).filter(([, v]) => v.n >= 5 && !isSub(v)).sort((a, b) => b[1].sum - a[1].sum)[0];
   if (nibble) {
     const [name, v] = nibble;
-    levers.push(["☕", `<b>${esc(name)}</b> — ${v.n} קניות קטנות שהצטברו ל-<b>${fmt(v.sum)}</b> (~${fmt(v.sum / monthSpan)}/ח׳)`]);
+    levers.push([ico("coffee"), `<b>${esc(name)}</b> — ${v.n} קניות קטנות שהצטברו ל-<b>${fmt(v.sum)}</b> (~${fmt(v.sum / monthSpan)}/ח׳)`]);
   }
 
   const section = (title, arr) => arr.length
@@ -1899,8 +1941,8 @@ function renderPatterns() {
     : "";
   el.innerHTML = `
     <p class="mut" style="margin:0 0 8px">מאז ${first.getDate()}.${first.getMonth() + 1}.${String(first.getFullYear()).slice(2)} · ${monthSpan} חודשים · סה"כ ${fmt(total)} (~${fmt(total / monthSpan)}/ח׳)</p>
-    ${section("🔁 חוזרות ומנויים", recLines) || `<p class="mut">עדיין אין מספיק נתונים לזיהוי חוזרות</p>`}
-    ${section("✂️ איפה הכי קל לחסוך", levers)}`;
+    ${section(`${ico("repeat")} חוזרות ומנויים`, recLines) || `<p class="mut">עדיין אין מספיק נתונים לזיהוי חוזרות</p>`}
+    ${section(`${ico("scissors")} איפה הכי קל לחסוך`, levers)}`;
 }
 
 /* ======================== edit modals (tx/fixed/cat) ================= */
