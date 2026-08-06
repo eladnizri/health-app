@@ -298,8 +298,9 @@ body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; 
 .tabbar button { position: relative; padding-top: 10px; }
 .tabbar button.on::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
   width: 26px; height: 3px; border-radius: 0 0 3px 3px; background: var(--accent); }
-.tabbar button .ic { font-size: 20px; transition: transform .15s; }
-.tabbar button.on .ic { transform: translateY(-1px) scale(1.08); }
+.tabbar button .ic { font-size: 20px; transition: transform .15s; display: inline-flex; }
+.tabbar button .ic svg { width: 23px; height: 23px; display: block; }
+.tabbar button.on .ic { transform: translateY(-1px) scale(1.06); }
 
 /* meters / bars rounder */
 .meter { height: 9px; border-radius: 5px; }
@@ -576,6 +577,25 @@ h2 { font-weight: 800; }
 .scr-head .h-title { font-size: 25px; font-weight: 800; letter-spacing: -.5px; line-height: 1.1; }
 .scr-head .h-sub { font-size: 13.5px; color: var(--muted); font-weight: 600; margin-top: 2px; }
 
+/* ---------- delta chip (▲/▼ pill), health-app style ---------- */
+.delta-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; white-space: nowrap; }
+.delta-chip svg { width: 10px; height: 10px; }
+.delta-chip.pos { background: rgba(52,211,153,.14); color: var(--good); }
+.delta-chip.neg { background: rgba(251,113,133,.14); color: var(--crit); }
+.delta-chip.flat { background: rgba(148,163,184,.12); color: var(--ink-2); }
+
+/* ---------- mini metric rings row, health-app style ---------- */
+.minis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.mini { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.mini-ring { position: relative; width: 72px; height: 72px; }
+.mini-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.mini-num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
+.mini-num b { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.mini-num s { font-size: 9px; color: var(--muted); text-decoration: none; margin-top: 2px; }
+.mini-lab { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--ink-2); font-weight: 600; }
+.mini-lab svg { width: 13px; height: 13px; }
+
 /* ---------- compact report layout for short phones (e.g. iPhone SE) ----------
    Keeps the whole entry flow — amount, quick amounts, categories, keypad —
    above the tab bar without scrolling on shorter viewports. */
@@ -650,6 +670,7 @@ h2 { font-weight: 800; }
     <button id="m-next">›</button>
   </div>
   <div class="kpis" id="m-kpis"></div>
+  <div class="card" style="padding:16px 12px"><div class="minis" id="m-metrics"></div></div>
   <div id="m-compare"></div>
   <div id="m-recap"></div>
   <div class="card" id="m-budget"></div>
@@ -794,10 +815,10 @@ h2 { font-weight: 800; }
 <!-- tab bar -->
 <nav class="tabbar" id="tabbar">
   <span class="tab-ind" id="tab-ind"></span>
-  <button data-s="report" class="on"><span class="ic">💸</span>דיווח</button>
-  <button data-s="weekend"><span class="ic">🌅</span>סופ"ש</button>
-  <button data-s="month"><span class="ic">📅</span>חודש</button>
-  <button data-s="settings"><span class="ic">⚙️</span>הגדרות</button>
+  <button data-s="report" class="on"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 8V6.5A1.5 1.5 0 0 0 17.5 5H5.5A1.5 1.5 0 0 0 4 6.5v11A1.5 1.5 0 0 0 5.5 19h12a1.5 1.5 0 0 0 1.5-1.5V16"/><path d="M20 9.5h-4a2.5 2.5 0 0 0 0 5h4a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1Z"/></svg></span>דיווח</button>
+  <button data-s="weekend"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="3.6"/><path d="M12 4v2M12 20v.5M5.2 6.2l1.3 1.3M17.5 7.5l1.3-1.3M3.5 13H5M19 13h1.5M6 20h12"/></svg></span>סופ"ש</button>
+  <button data-s="month"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2.5"/><path d="M4 9.5h16M8 3v4M16 3v4"/></svg></span>חודש</button>
+  <button data-s="settings"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h8M17 8h2M5 16h2M11 16h8"/><circle cx="15" cy="8" r="2.2"/><circle cx="9" cy="16" r="2.2"/></svg></span>הגדרות</button>
 </nav>
 
 <div class="toast" id="toast"><span id="toast-msg"></span><button id="toast-undo">ביטול</button></div>
@@ -1269,6 +1290,48 @@ function ringSvg(frac, color) {
       stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/>
   </svg>`;
 }
+/* small metric ring (72px) for the month "מדדים" row */
+function miniRingSvg(frac, color) {
+  const r = 30, c = 2 * Math.PI * r;
+  const off = c * (1 - Math.max(0, Math.min(1, frac)));
+  return `<svg viewBox="0 0 72 72">
+    <circle cx="36" cy="36" r="${r}" fill="none" stroke="var(--ring-track)" stroke-width="6"/>
+    <circle cx="36" cy="36" r="${r}" fill="none" stroke="${color}" stroke-width="6"
+      stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg>`;
+}
+/* health-app style ▲/▼ delta pill. goodUp=true → an increase is green. */
+const TRI_UP = `<svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 2.5l4.2 7H1.8z"/></svg>`;
+const TRI_DN = `<svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 9.5L1.8 2.5h8.4z"/></svg>`;
+function deltaChip(pct, goodUp = true) {
+  if (Math.abs(pct) < 1) return `<span class="delta-chip flat">≈ 0%</span>`;
+  const up = pct > 0, good = up === goodUp;
+  return `<span class="delta-chip ${good ? "pos" : "neg"}">${up ? TRI_UP : TRI_DN}${up ? "+" : "−"}${Math.abs(pct)}%</span>`;
+}
+/* small line icons for the metric-ring labels (health-app style) */
+const svgIco = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const IC_SAVE = svgIco(`<path d="M12 3v9m0 0l-3-3m3 3l3-3"/><path d="M5 14v3a1.6 1.6 0 0 0 1.6 1.6h10.8A1.6 1.6 0 0 0 19 17v-3"/>`);
+const IC_TARGET = svgIco(`<circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="3.4"/>`);
+const IC_SUN = svgIco(`<circle cx="12" cy="12" r="3.8"/><path d="M12 3v2M12 19v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M3 12h2M19 12h2M4.6 19.4l1.4-1.4M18 6l1.4-1.4"/>`);
+const IC_REPEAT = svgIco(`<path d="M4 9a8 8 0 0 1 13-3l2.5 2.5M20 5.5V9h-3.5"/><path d="M20 15a8 8 0 0 1-13 3l-2.5-2.5M4 18.5V15h3.5"/>`);
+/* month "מדדים" row — four at-a-glance ratio rings */
+function renderMetrics(m) {
+  const el = $("#m-metrics"); if (!el) return;
+  const mb = S.settings.monthlyBudget;
+  const rate = m.inc > 0 ? Math.round(m.net / m.inc * 100) : null;
+  const used = mb > 0 ? Math.round(m.reportedOut / mb * 100) : null;
+  const wshare = m.reportedOut > 0 ? Math.round(m.weekendOut / m.reportedOut * 100) : 0;
+  const fload = m.inc > 0 ? Math.round(m.fixedOut / m.inc * 100) : 0;
+  const items = [
+    { val: rate == null ? "—" : rate, frac: rate == null ? 0 : Math.max(0, rate) / 100, color: "var(--good)", lab: "חיסכון", icon: IC_SAVE, dim: rate == null },
+    { val: used == null ? "—" : used, frac: used == null ? 0 : m.reportedOut / mb, color: used != null && used > 100 ? "var(--crit)" : "var(--accent)", lab: "תקציב", icon: IC_TARGET, dim: used == null },
+    { val: wshare, frac: wshare / 100, color: "var(--c5)", lab: "סופ\"ש", icon: IC_SUN, dim: false },
+    { val: fload, frac: fload / 100, color: "var(--warn)", lab: "קבועות", icon: IC_REPEAT, dim: false },
+  ];
+  el.innerHTML = items.map((it) => `<div class="mini">
+    <div class="mini-ring">${miniRingSvg(it.dim ? 0 : it.frac, it.color)}
+      <div class="mini-num"><b${it.dim ? ' style="color:var(--muted)"' : ""}>${it.val}</b><s>%</s></div></div>
+    <div class="mini-lab">${it.icon}${it.lab}</div></div>`).join("");
+}
 /* vertical bar chart (oldest→newest, left→right). items: [{label,value,over}] */
 function vbars(items, budget) {
   if (!items.length || items.every((x) => !x.value)) {
@@ -1490,21 +1553,20 @@ function renderMonth() {
     <div class="kpi"><div class="l">הוצאות</div><div class="v num count" data-to="${m.out}" data-prefix="">${fmt(m.out)}</div></div>
     ${savingsKpi}`;
 
+  renderMetrics(m);
+
   // comparison to the previous month (reported expenses)
   let py = mYear, pm = mMonth - 1; if (pm < 0) { pm = 11; py--; }
   const prev = monthTotals(py, pm);
   const cmp = $("#m-compare");
   if (prev.reportedOut > 0 && m.reportedOut > 0) {
     const d = Math.round((m.reportedOut / prev.reportedOut - 1) * 100);
-    const up = d > 0;
     const near = Math.abs(d) < 3;
-    const em = near ? "➖" : up ? "🔺" : "🔻";
-    const col = near ? "var(--muted)" : up ? "var(--crit)" : "var(--good-text)";
-    const txt = near ? `דומה לחודש הקודם (${MONTHS[pm]})`
-      : `${up ? "יותר" : "פחות"} ב-${Math.abs(d)}% מ${MONTHS[pm]} (${fmt(prev.reportedOut)})`;
-    cmp.innerHTML = `<div class="compare-line"><span class="em">${em}</span>
-      <span>הוצאות מדווחות ${txt}</span>
-      <span class="num" style="color:${col};font-weight:800;margin-inline-start:auto">${up ? "+" : ""}${d}%</span></div>`;
+    const txt = near ? `הוצאות דומות לחודש הקודם (${MONTHS[pm]})`
+      : `הוצאות מדווחות ${d > 0 ? "גבוהות" : "נמוכות"} מ${MONTHS[pm]} (${fmt(prev.reportedOut)})`;
+    // spending going up is "bad" → goodUp=false so an increase shows red
+    cmp.innerHTML = `<div class="compare-line"><span>${txt}</span>
+      <span style="margin-inline-start:auto">${deltaChip(d, false)}</span></div>`;
     cmp.style.display = "";
   } else {
     cmp.style.display = "none";
